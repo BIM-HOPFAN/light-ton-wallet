@@ -53,7 +53,7 @@ export default function RestoreWallet() {
     if (!walletData) return;
     
     const encrypted = await encryptMnemonic(walletData.mnemonic, pin);
-    storeEncryptedWallet(encrypted);
+    storeEncryptedWallet(encrypted, walletData.address);
     await storePINHash(pin);
     
     setWallet(walletData);

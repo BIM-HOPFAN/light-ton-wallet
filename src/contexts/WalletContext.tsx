@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { WalletData } from '@/lib/crypto';
-import { hasWallet } from '@/lib/storage';
+import { hasWallet, getActiveWallet, StoredWallet } from '@/lib/storage';
 
 interface WalletContextType {
   wallet: WalletData | null;
   setWallet: (wallet: WalletData | null) => void;
+  activeWalletId: string | null;
+  setActiveWalletId: (id: string | null) => void;
   isLocked: boolean;
   setIsLocked: (locked: boolean) => void;
   balance: string;
@@ -15,6 +17,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [activeWalletId, setActiveWalletId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(true);
   const [balance, setBalance] = useState('0.00');
   
@@ -22,13 +25,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     // Check if wallet exists on mount
     if (hasWallet() && !wallet) {
       setIsLocked(true);
+      const active = getActiveWallet();
+      if (active) {
+        setActiveWalletId(active.id);
+      }
     } else if (!hasWallet()) {
       setIsLocked(false);
     }
   }, [wallet]);
   
   return (
-    <WalletContext.Provider value={{ wallet, setWallet, isLocked, setIsLocked, balance, setBalance }}>
+    <WalletContext.Provider value={{ wallet, setWallet, activeWalletId, setActiveWalletId, isLocked, setIsLocked, balance, setBalance }}>
       {children}
     </WalletContext.Provider>
   );

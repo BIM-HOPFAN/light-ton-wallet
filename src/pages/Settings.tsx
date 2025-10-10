@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, Eye, Shield, Trash2, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/contexts/WalletContext';
-import { deleteWallet } from '@/lib/storage';
+import { deleteWallet, verifyPIN } from '@/lib/storage';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,31 @@ export default function Settings() {
   const [showMnemonic, setShowMnemonic] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [pin, setPin] = useState('');
+  const [pinError, setPinError] = useState('');
+  
+  const handleVerifyPin = async () => {
+    const isValid = await verifyPIN(pin);
+    if (isValid) {
+      setShowMnemonic(true);
+      setShowPinDialog(false);
+      setPin('');
+      setPinError('');
+    } else {
+      setPinError('Incorrect PIN. Please try again.');
+    }
+  };
+
+  const handleShowRecoveryPhrase = () => {
+    if (showMnemonic) {
+      setShowMnemonic(false);
+    } else {
+      setPin('');
+      setPinError('');
+      setShowPinDialog(true);
+    }
+  };
   
   const handleDeleteWallet = () => {
     if (confirmText === 'DELETE') {
@@ -80,7 +105,7 @@ export default function Settings() {
               </div>
               <Button 
                 variant="outline"
-                onClick={() => setShowMnemonic(!showMnemonic)}
+                onClick={handleShowRecoveryPhrase}
               >
                 {showMnemonic ? 'Hide' : 'Show'}
               </Button>
@@ -142,6 +167,57 @@ export default function Settings() {
           </Card>
         </div>
         
+        <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Enter PIN</DialogTitle>
+              <DialogDescription>
+                Enter your wallet PIN to view the recovery phrase
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="my-4">
+              <Label className="mb-2 block">PIN</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => {
+                  setPin(e.target.value);
+                  setPinError('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && pin.length >= 4) {
+                    handleVerifyPin();
+                  }
+                }}
+                placeholder="Enter your PIN"
+                className={pinError ? 'border-destructive' : ''}
+              />
+              {pinError && (
+                <p className="text-sm text-destructive mt-2">{pinError}</p>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowPinDialog(false);
+                setPin('');
+                setPinError('');
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleVerifyPin}
+                disabled={pin.length < 4}
+              >
+                Verify PIN
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <DialogContent>
             <DialogHeader>

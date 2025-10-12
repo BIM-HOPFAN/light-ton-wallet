@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet } from 'lucide-react';
+import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet, Link2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/contexts/WalletContext';
 import { deleteWallet, verifyPIN } from '@/lib/storage';
@@ -108,6 +108,26 @@ export default function Settings() {
                 onClick={() => navigate('/wallet-manager')}
               >
                 Manage
+              </Button>
+            </div>
+          </Card>
+          
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <Link2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Connected Apps</h3>
+                  <p className="text-sm text-muted-foreground">Manage WalletConnect sessions</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/connected-apps')}
+              >
+                View
               </Button>
             </div>
           </Card>

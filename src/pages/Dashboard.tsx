@@ -4,7 +4,7 @@ import { useWallet } from '@/contexts/WalletContext';
 import WalletCard from '@/components/WalletCard';
 import TransactionList from '@/components/TransactionList';
 import { Button } from '@/components/ui/button';
-import { Settings, LogOut } from 'lucide-react';
+import { Settings, LogOut, ScanLine } from 'lucide-react';
 import { tonService } from '@/lib/ton';
 import { deleteWallet } from '@/lib/storage';
 import { toast } from 'sonner';
@@ -53,6 +53,14 @@ export default function Dashboard() {
             Light Wallet
           </h1>
           <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate('/scan-connect')}
+              title="Connect Apps"
+            >
+              <ScanLine className="h-5 w-5" />
+            </Button>
             <Button 
               variant="ghost" 
               size="icon"

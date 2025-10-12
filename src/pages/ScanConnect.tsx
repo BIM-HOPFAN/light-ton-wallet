@@ -34,8 +34,13 @@ export default function ScanConnect() {
 
     setIsConnecting(true);
     try {
-      await connectWithUri(uri);
-      toast.success('Connection request sent');
+      // Extract app info from URI or use defaults
+      const urlParams = new URLSearchParams(uri.split('?')[1] || '');
+      const name = urlParams.get('name') || 'Unknown dApp';
+      const url = urlParams.get('url') || 'Unknown URL';
+      
+      await connectWithUri(uri, { name, url });
+      toast.success('App connected successfully');
       navigate('/connected-apps');
     } catch (error) {
       console.error('Connection error:', error);

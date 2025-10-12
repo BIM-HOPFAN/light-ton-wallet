@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, Link2Off, ExternalLink, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  initializeWalletConnect,
   getActiveSessions,
   disconnectSession,
   disconnectAllSessions,
@@ -33,10 +32,9 @@ export default function ConnectedApps() {
     loadSessions();
   }, []);
 
-  const loadSessions = async () => {
+  const loadSessions = () => {
     try {
-      await initializeWalletConnect();
-      const activeSessions = await getActiveSessions();
+      const activeSessions = getActiveSessions();
       setSessions(activeSessions);
     } catch (error) {
       console.error('Failed to load sessions:', error);
@@ -46,10 +44,10 @@ export default function ConnectedApps() {
     }
   };
 
-  const handleDisconnect = async (topic: string) => {
+  const handleDisconnect = (id: string) => {
     try {
-      await disconnectSession(topic);
-      setSessions(sessions.filter((s) => s.topic !== topic));
+      disconnectSession(id);
+      setSessions(sessions.filter((s) => s.id !== id));
       toast.success('Disconnected successfully');
     } catch (error) {
       console.error('Disconnect error:', error);
@@ -59,9 +57,9 @@ export default function ConnectedApps() {
     }
   };
 
-  const handleDisconnectAll = async () => {
+  const handleDisconnectAll = () => {
     try {
-      await disconnectAllSessions();
+      disconnectAllSessions();
       setSessions([]);
       toast.success('All apps disconnected');
     } catch (error) {
@@ -72,8 +70,8 @@ export default function ConnectedApps() {
     }
   };
 
-  const formatExpiry = (expiry: number) => {
-    const date = new Date(expiry * 1000);
+  const formatConnectedDate = (timestamp: number) => {
+    const date = new Date(timestamp);
     return date.toLocaleDateString();
   };
 
@@ -132,14 +130,22 @@ export default function ConnectedApps() {
         ) : (
           <div className="space-y-3">
             {sessions.map((session) => (
-              <Card key={session.topic} className="p-4">
+              <Card key={session.id} className="p-4">
                 <div className="flex items-center gap-4">
-                  {session.icons[0] && (
+                  {session.icon && (
                     <img
-                      src={session.icons[0]}
+                      src={session.icon}
                       alt={session.name}
                       className="w-12 h-12 rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
+                  )}
+                  {!session.icon && (
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Link2Off className="h-6 w-6 text-primary" />
+                    </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate">{session.name}</h3>
@@ -147,7 +153,7 @@ export default function ConnectedApps() {
                       {session.url}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Expires: {formatExpiry(session.expiry)}
+                      Connected: {formatConnectedDate(session.connectedAt)}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -161,7 +167,7 @@ export default function ConnectedApps() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => setDisconnectingTopic(session.topic)}
+                      onClick={() => setDisconnectingTopic(session.id)}
                     >
                       Disconnect
                     </Button>

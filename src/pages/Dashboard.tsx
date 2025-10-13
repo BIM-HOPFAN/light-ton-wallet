@@ -4,7 +4,7 @@ import { useWallet } from '@/contexts/WalletContext';
 import WalletCard from '@/components/WalletCard';
 import TransactionList from '@/components/TransactionList';
 import { Button } from '@/components/ui/button';
-import { Settings, LogOut, ScanLine } from 'lucide-react';
+import { Settings, LogOut, ScanLine, Coins, ArrowRight } from 'lucide-react';
 import { tonService } from '@/lib/ton';
 import { deleteWallet } from '@/lib/storage';
 import { toast } from 'sonner';
@@ -81,6 +81,31 @@ export default function Dashboard() {
       
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <WalletCard />
+        
+        {/* Bimcoin Earn Promotion */}
+        <div className="my-8 relative overflow-hidden rounded-xl border bg-gradient-to-br from-primary/10 via-secondary/10 to-primary/5 p-6 shadow-lg">
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-4 flex-1">
+              <div className="p-3 rounded-full bg-primary/20 backdrop-blur-sm">
+                <Coins className="h-8 w-8 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold text-foreground">Earn with Bimcoin</h3>
+                <p className="text-sm text-muted-foreground">Start earning rewards on TON Network today</p>
+              </div>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => window.open('https://bimlight.org', '_blank')}
+              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-glow group min-w-fit"
+            >
+              Start Earning
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl -z-0" />
+        </div>
+        
         <TransactionList />
       </main>
     </div>

@@ -1,8 +1,11 @@
+export type Network = 'TON' | 'Ethereum' | 'Binance Smart Chain' | 'Polygon' | 'Solana' | 'Bitcoin';
+
 export interface Token {
   id: string;
   symbol: string;
   name: string;
   decimals: number;
+  network: Network;
   contractAddress?: string;
   icon?: string;
   isNative?: boolean;
@@ -18,6 +21,7 @@ export const DEFAULT_TOKENS: Token[] = [
     symbol: 'TON',
     name: 'Toncoin',
     decimals: 9,
+    network: 'TON',
     isNative: true,
     icon: '💎',
   },
@@ -26,9 +30,19 @@ export const DEFAULT_TOKENS: Token[] = [
     symbol: 'USDT',
     name: 'Tether USD',
     decimals: 6,
+    network: 'TON',
     contractAddress: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs',
     icon: '₮',
   },
+];
+
+export const SUPPORTED_NETWORKS: Network[] = [
+  'TON',
+  'Ethereum',
+  'Binance Smart Chain',
+  'Polygon',
+  'Solana',
+  'Bitcoin',
 ];
 
 export function getTokens(): Token[] {

@@ -119,7 +119,7 @@ export default function Send() {
                         <span>{selectedToken.icon || '🪙'}</span>
                         <span>{selectedToken.symbol}</span>
                         <span className="text-muted-foreground text-sm">
-                          ({selectedToken.id === 'ton' ? balance : selectedToken.balance || '0.00'})
+                          {selectedToken.network} - ({selectedToken.id === 'ton' ? balance : selectedToken.balance || '0.00'})
                         </span>
                       </div>
                     )}
@@ -132,7 +132,7 @@ export default function Send() {
                         <span>{token.icon || '🪙'}</span>
                         <span>{token.symbol}</span>
                         <span className="text-muted-foreground text-sm">
-                          ({token.id === 'ton' ? balance : token.balance || '0.00'})
+                          {token.network} - ({token.id === 'ton' ? balance : token.balance || '0.00'})
                         </span>
                       </div>
                     </SelectItem>

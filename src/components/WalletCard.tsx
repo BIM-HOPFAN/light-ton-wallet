@@ -73,7 +73,10 @@ export default function WalletCard() {
                   {token.icon || '🪙'}
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">{token.symbol}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-sm">{token.symbol}</p>
+                    <span className="text-xs text-muted-foreground">({token.network})</span>
+                  </div>
                   <p className="text-xs text-muted-foreground">{token.name}</p>
                 </div>
               </div>

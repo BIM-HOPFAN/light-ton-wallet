@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Plus, Trash2, Coins } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { getTokens, addToken, removeToken, Token } from '@/lib/tokens';
+import { getTokens, addToken, removeToken, Token, SUPPORTED_NETWORKS, Network } from '@/lib/tokens';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ export default function Tokens() {
     symbol: '',
     name: '',
     decimals: '9',
+    network: 'TON' as Network,
     contractAddress: '',
   });
 
@@ -52,12 +54,13 @@ export default function Tokens() {
         symbol: formData.symbol.toUpperCase(),
         name: formData.name,
         decimals: parseInt(formData.decimals) || 9,
+        network: formData.network,
         contractAddress: formData.contractAddress || undefined,
       });
 
       toast.success('Token added successfully');
       setShowAddDialog(false);
-      setFormData({ symbol: '', name: '', decimals: '9', contractAddress: '' });
+      setFormData({ symbol: '', name: '', decimals: '9', network: 'TON', contractAddress: '' });
       loadTokens();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to add token');
@@ -124,6 +127,9 @@ export default function Tokens() {
                     )}
                   </h3>
                   <p className="text-sm text-muted-foreground">{token.symbol}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Network: {token.network}
+                  </p>
                   {token.contractAddress && (
                     <p className="text-xs text-muted-foreground truncate mt-1">
                       {token.contractAddress}
@@ -179,6 +185,25 @@ export default function Tokens() {
               </div>
 
               <div>
+                <Label>Network *</Label>
+                <Select
+                  value={formData.network}
+                  onValueChange={(value: Network) => setFormData({ ...formData, network: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_NETWORKS.map((network) => (
+                      <SelectItem key={network} value={network}>
+                        {network}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <Label>Decimals</Label>
                 <Input
                   type="number"
@@ -206,7 +231,7 @@ export default function Tokens() {
                 variant="outline"
                 onClick={() => {
                   setShowAddDialog(false);
-                  setFormData({ symbol: '', name: '', decimals: '9', contractAddress: '' });
+                  setFormData({ symbol: '', name: '', decimals: '9', network: 'TON', contractAddress: '' });
                 }}
               >
                 Cancel

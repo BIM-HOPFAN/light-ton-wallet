@@ -11,6 +11,7 @@ import Unlock from "./pages/Unlock";
 import Dashboard from "./pages/Dashboard";
 import Send from "./pages/Send";
 import Receive from "./pages/Receive";
+import Tokens from "./pages/Tokens";
 import Settings from "./pages/Settings";
 import WalletManager from "./pages/WalletManager";
 import AddWallet from "./pages/AddWallet";
@@ -40,6 +41,7 @@ const App = () => {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/send" element={<Send />} />
               <Route path="/receive" element={<Receive />} />
+              <Route path="/tokens" element={<Tokens />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/wallet-manager" element={<WalletManager />} />
               <Route path="/wallet-manager/create" element={<AddWallet />} />

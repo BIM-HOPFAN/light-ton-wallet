@@ -1,13 +1,22 @@
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Send, Download } from 'lucide-react';
+import { Copy, Send, Download, Coins, ChevronDown } from 'lucide-react';
 import { useWallet } from '@/contexts/WalletContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { getTokens, Token } from '@/lib/tokens';
 
 export default function WalletCard() {
   const { wallet, balance } = useWallet();
   const navigate = useNavigate();
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [showAllTokens, setShowAllTokens] = useState(false);
+
+  useEffect(() => {
+    const allTokens = getTokens();
+    setTokens(allTokens);
+  }, []);
   
   const copyAddress = () => {
     if (wallet?.address) {
@@ -39,6 +48,58 @@ export default function WalletCard() {
         </div>
       )}
       
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-muted-foreground">Assets</h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/tokens')}
+          >
+            <Coins className="h-4 w-4 mr-1" />
+            Manage
+          </Button>
+        </div>
+        
+        <div className="space-y-2">
+          {tokens.slice(0, showAllTokens ? tokens.length : 3).map((token) => (
+            <div
+              key={token.id}
+              className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+              onClick={() => navigate('/send', { state: { selectedToken: token } })}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-lg">
+                  {token.icon || '🪙'}
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">{token.symbol}</p>
+                  <p className="text-xs text-muted-foreground">{token.name}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold text-sm">
+                  {token.id === 'ton' ? balance : token.balance || '0.00'}
+                </p>
+                <p className="text-xs text-muted-foreground">{token.symbol}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {tokens.length > 3 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAllTokens(!showAllTokens)}
+            className="w-full mt-2"
+          >
+            <ChevronDown className={`h-4 w-4 mr-1 transition-transform ${showAllTokens ? 'rotate-180' : ''}`} />
+            {showAllTokens ? 'Show Less' : `Show ${tokens.length - 3} More`}
+          </Button>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <Button 
           className="gradient-primary transition-smooth"

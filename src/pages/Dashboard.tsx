@@ -8,6 +8,7 @@ import { Settings, LogOut, ScanLine, Coins, ArrowRight } from 'lucide-react';
 import { tonService } from '@/lib/ton';
 import { deleteWallet } from '@/lib/storage';
 import { toast } from 'sonner';
+import { telegramService } from '@/lib/telegram';
 
 export default function Dashboard() {
   const { wallet, isLocked, balance, setBalance, setWallet, setIsLocked } = useWallet();
@@ -17,6 +18,16 @@ export default function Dashboard() {
     if (isLocked || !wallet) {
       navigate('/unlock');
       return;
+    }
+    
+    // Initialize Telegram WebApp if available
+    if (telegramService.isAvailable()) {
+      const webApp = telegramService.getWebApp();
+      if (webApp) {
+        // Apply Telegram theme
+        document.documentElement.style.setProperty('--tg-theme-bg-color', webApp.backgroundColor);
+        document.documentElement.style.setProperty('--tg-theme-text-color', webApp.themeParams.text_color || '');
+      }
     }
     
     // Fetch balance
@@ -96,7 +107,10 @@ export default function Dashboard() {
             </div>
             <Button
               size="lg"
-              onClick={() => window.open('https://bimlight.org', '_blank')}
+              onClick={() => {
+                telegramService.hapticFeedback('impact');
+                telegramService.openLink('https://bimlight.org');
+              }}
               className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-glow group min-w-fit"
             >
               Start Earning

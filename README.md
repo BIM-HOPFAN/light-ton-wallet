@@ -1,3 +1,81 @@
+# Light Wallet - Multi-Platform TON Wallet
+
+A secure, lightweight cryptocurrency wallet for the TON blockchain, available on **Telegram, Web (PWA), iOS, and Android**.
+
+## 🚀 Features
+
+- ✅ **Multi-Network Support** - TON, Ethereum, BSC, Polygon, Solana, Bitcoin
+- ✅ **Secure Storage** - Encrypted wallet data with password protection
+- ✅ **Real Transactions** - Send and receive TON with real transaction tracking
+- ✅ **Multi-Wallet** - Manage multiple wallets in one app
+- ✅ **QR Code Support** - Easy scanning for addresses and WalletConnect
+- ✅ **Transaction History** - Track all your transactions locally
+
+## 📱 Available Platforms
+
+### 1. Telegram Mini App
+Run directly inside Telegram chats with native integration.
+
+### 2. Progressive Web App (PWA)
+Install from your browser on any device - works offline!
+
+### 3. Native Mobile Apps
+Full iOS and Android apps via Capacitor.
+
+## 🛠️ Technology Stack
+
+- **Frontend:** React + TypeScript + Vite
+- **Styling:** Tailwind CSS + shadcn/ui
+- **Blockchain:** @ton/ton, @ton/crypto
+- **Mobile:** Capacitor (iOS & Android)
+- **PWA:** vite-plugin-pwa
+- **Telegram:** Telegram WebApp SDK
+
+## 📖 Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions on deploying to:
+- Telegram
+- Web (PWA)
+- iOS App Store
+- Google Play Store
+
+## 🔐 Security
+
+- Wallet private keys are encrypted and stored locally
+- Password-protected access
+- Recovery phrase for wallet restoration
+- No data sent to external servers
+
+## 💻 Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## 📄 License
+
+MIT License - feel free to use this project for your own needs.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## ⚠️ Disclaimer
+
+This is a demo wallet for educational purposes. Always secure your private keys and recovery phrases. Never share them with anyone.
+
+---
+
 # Welcome to your Lovable project
 
 ## Project info

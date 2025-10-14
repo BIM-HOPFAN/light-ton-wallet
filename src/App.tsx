@@ -18,6 +18,7 @@ import AddWallet from "./pages/AddWallet";
 import ImportWallet from "./pages/ImportWallet";
 import ScanConnect from "./pages/ScanConnect";
 import ConnectedApps from "./pages/ConnectedApps";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 import { hasWallet } from "./lib/storage";
 
@@ -48,6 +49,7 @@ const App = () => {
               <Route path="/wallet-manager/import" element={<ImportWallet />} />
               <Route path="/scan-connect" element={<ScanConnect />} />
               <Route path="/connected-apps" element={<ConnectedApps />} />
+              <Route path="/install" element={<Install />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

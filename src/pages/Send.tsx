@@ -12,6 +12,7 @@ import { tonService } from '@/lib/ton';
 import { toast } from 'sonner';
 import { getTokens, Token } from '@/lib/tokens';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { addTransaction, updateTransactionStatus } from '@/lib/transactions';
 
 export default function Send() {
   const navigate = useNavigate();
@@ -62,6 +63,17 @@ export default function Send() {
     
     setLoading(true);
     
+    // Create pending transaction
+    const pendingTx = addTransaction({
+      type: 'send',
+      amount,
+      token: selectedToken?.symbol || 'TON',
+      network: selectedToken?.network || 'TON',
+      address: recipient,
+      status: 'pending',
+      memo
+    });
+    
     try {
       const result = await tonService.sendTON({
         mnemonic: wallet.mnemonic,
@@ -71,12 +83,15 @@ export default function Send() {
       });
       
       if (result.success) {
+        updateTransactionStatus(pendingTx.id, 'completed');
         toast.success('Transaction sent successfully!');
         navigate('/dashboard');
       } else {
+        updateTransactionStatus(pendingTx.id, 'failed');
         toast.error(result.error || 'Failed to send transaction');
       }
     } catch (error) {
+      updateTransactionStatus(pendingTx.id, 'failed');
       toast.error('Failed to send transaction');
       console.error(error);
     } finally {

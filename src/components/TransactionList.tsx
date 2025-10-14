@@ -1,36 +1,24 @@
 import { Card } from '@/components/ui/card';
 import { ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-react';
-
-interface Transaction {
-  id: string;
-  type: 'send' | 'receive';
-  amount: string;
-  address: string;
-  timestamp: Date;
-  status: 'pending' | 'completed';
-}
-
-// Mock data - replace with real transaction history
-const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    type: 'receive',
-    amount: '10.50',
-    address: 'EQD...abc',
-    timestamp: new Date(Date.now() - 3600000),
-    status: 'completed'
-  },
-  {
-    id: '2',
-    type: 'send',
-    amount: '5.25',
-    address: 'EQD...xyz',
-    timestamp: new Date(Date.now() - 7200000),
-    status: 'completed'
-  }
-];
+import { getTransactions, Transaction } from '@/lib/transactions';
+import { useState, useEffect } from 'react';
 
 export default function TransactionList() {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  
+  useEffect(() => {
+    // Load transactions from storage
+    const loadTransactions = () => {
+      const txs = getTransactions();
+      setTransactions(txs);
+    };
+    
+    loadTransactions();
+    
+    // Refresh every 5 seconds to catch new transactions
+    const interval = setInterval(loadTransactions, 5000);
+    return () => clearInterval(interval);
+  }, []);
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-6)}`;
   };
@@ -48,14 +36,14 @@ export default function TransactionList() {
     <div>
       <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
       
-      {mockTransactions.length === 0 ? (
+      {transactions.length === 0 ? (
         <Card className="p-8 text-center">
           <Clock className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
           <p className="text-muted-foreground">No transactions yet</p>
         </Card>
       ) : (
         <div className="space-y-3">
-          {mockTransactions.map((tx) => (
+          {transactions.map((tx) => (
             <Card key={tx.id} className="p-4 hover:shadow-md transition-smooth cursor-pointer">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -80,11 +68,11 @@ export default function TransactionList() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`font-semibold ${
-                    tx.type === 'receive' ? 'text-success' : 'text-foreground'
-                  }`}>
-                    {tx.type === 'receive' ? '+' : '-'}{tx.amount} TON
-                  </p>
+                   <p className={`font-semibold ${
+                     tx.type === 'receive' ? 'text-success' : 'text-foreground'
+                   }`}>
+                     {tx.type === 'receive' ? '+' : '-'}{tx.amount} {tx.token}
+                   </p>
                   <p className="text-sm text-muted-foreground">
                     {formatTime(tx.timestamp)}
                   </p>

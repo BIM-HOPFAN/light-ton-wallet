@@ -50,6 +50,7 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB limit
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
@@ -92,4 +93,16 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     include: ['react', 'react-dom', '@tanstack/react-query'],
   },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ton-vendor': ['@ton/ton', '@ton/crypto', '@ton/core'],
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-toast'],
+        }
+      }
+    }
+  }
 }));

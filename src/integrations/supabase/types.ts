@@ -14,7 +14,210 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      address_book: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          name: string
+          network: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          name: string
+          network?: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          name?: string
+          network?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      connected_dapps: {
+        Row: {
+          connected_at: string
+          dapp_icon: string | null
+          dapp_name: string
+          dapp_url: string
+          id: string
+          last_used: string | null
+          permissions: Json | null
+          user_id: string
+        }
+        Insert: {
+          connected_at?: string
+          dapp_icon?: string | null
+          dapp_name: string
+          dapp_url: string
+          id?: string
+          last_used?: string | null
+          permissions?: Json | null
+          user_id: string
+        }
+        Update: {
+          connected_at?: string
+          dapp_icon?: string | null
+          dapp_name?: string
+          dapp_url?: string
+          id?: string
+          last_used?: string | null
+          permissions?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      nft_collection: {
+        Row: {
+          collection_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          metadata: Json | null
+          name: string | null
+          nft_address: string
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          collection_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          metadata?: Json | null
+          name?: string | null
+          nft_address: string
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          collection_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          metadata?: Json | null
+          name?: string | null
+          nft_address?: string
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      transaction_history: {
+        Row: {
+          amount: string
+          block_number: number | null
+          created_at: string
+          fee: string | null
+          id: string
+          memo: string | null
+          network: string
+          recipient_address: string | null
+          sender_address: string | null
+          status: string
+          timestamp: string
+          token: string
+          tx_hash: string
+          type: string
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          amount: string
+          block_number?: number | null
+          created_at?: string
+          fee?: string | null
+          id?: string
+          memo?: string | null
+          network?: string
+          recipient_address?: string | null
+          sender_address?: string | null
+          status?: string
+          timestamp?: string
+          token?: string
+          tx_hash: string
+          type: string
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          amount?: string
+          block_number?: number | null
+          created_at?: string
+          fee?: string | null
+          id?: string
+          memo?: string | null
+          network?: string
+          recipient_address?: string | null
+          sender_address?: string | null
+          status?: string
+          timestamp?: string
+          token?: string
+          tx_hash?: string
+          type?: string
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      wallet_settings: {
+        Row: {
+          auto_lock_minutes: number | null
+          biometric_enabled: boolean | null
+          created_at: string
+          currency: string
+          id: string
+          network: string
+          push_notifications_enabled: boolean | null
+          transaction_limit_daily: string | null
+          transaction_limit_per_tx: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_lock_minutes?: number | null
+          biometric_enabled?: boolean | null
+          created_at?: string
+          currency?: string
+          id?: string
+          network?: string
+          push_notifications_enabled?: boolean | null
+          transaction_limit_daily?: string | null
+          transaction_limit_per_tx?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_lock_minutes?: number | null
+          biometric_enabled?: boolean | null
+          created_at?: string
+          currency?: string
+          id?: string
+          network?: string
+          push_notifications_enabled?: boolean | null
+          transaction_limit_daily?: string | null
+          transaction_limit_per_tx?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

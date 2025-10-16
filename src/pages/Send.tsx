@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send as SendIcon, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Send as SendIcon, CheckCircle, XCircle, UserCircle } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useWallet } from '@/contexts/WalletContext';
 import { isValidAddress } from '@/lib/crypto';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { getTokens, Token } from '@/lib/tokens';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { addTransaction, updateTransactionStatus } from '@/lib/transactions';
+import { blockchainService } from '@/lib/blockchain';
 
 export default function Send() {
   const navigate = useNavigate();
@@ -24,29 +25,62 @@ export default function Send() {
   const [amount, setAmount] = useState('');
   const [memo, setMemo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isValidatingAddress, setIsValidatingAddress] = useState(false);
+  const [addressValid, setAddressValid] = useState<boolean | null>(null);
+  const [estimatedFee, setEstimatedFee] = useState('0.01');
 
   useEffect(() => {
     const allTokens = getTokens();
     setTokens(allTokens);
     
-    // Check if token was passed from navigation state
+    // Check if token was passed from navigation state or address from address book
     const stateToken = location.state?.selectedToken;
+    const recipientAddress = location.state?.recipientAddress;
+    
     if (stateToken) {
       setSelectedToken(stateToken);
     } else {
       setSelectedToken(allTokens.find(t => t.id === 'ton') || allTokens[0]);
     }
+    
+    if (recipientAddress) {
+      setRecipient(recipientAddress);
+    }
   }, [location]);
   
+  // Validate address and estimate fee
+  useEffect(() => {
+    const validateAndEstimate = async () => {
+      if (!recipient) {
+        setAddressValid(null);
+        return;
+      }
+      
+      setIsValidatingAddress(true);
+      const valid = await blockchainService.validateAddress(recipient);
+      setAddressValid(valid);
+      
+      if (valid && amount) {
+        const fee = await blockchainService.estimateFee(recipient, amount);
+        setEstimatedFee(fee);
+      }
+      
+      setIsValidatingAddress(false);
+    };
+    
+    const timer = setTimeout(validateAndEstimate, 500);
+    return () => clearTimeout(timer);
+  }, [recipient, amount]);
+  
   const currentBalance = selectedToken?.id === 'ton' ? balance : (selectedToken?.balance || '0.00');
-  const fee = tonService.estimateFees();
+  const fee = estimatedFee;
   const total = amount ? (parseFloat(amount) + parseFloat(fee)).toFixed(2) : '0.00';
   const maxAmount = Math.max(0, parseFloat(currentBalance) - parseFloat(fee)).toFixed(2);
   
   const handleSend = async () => {
     if (!wallet) return;
     
-    if (!isValidAddress(recipient)) {
+    if (!addressValid) {
       toast.error('Invalid recipient address');
       return;
     }
@@ -156,13 +190,40 @@ export default function Send() {
               </Select>
             </div>
             <div>
-              <Label className="mb-2 block">Recipient Address</Label>
-              <Input
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                placeholder="EQD..."
-                className="font-mono"
-              />
+              <div className="flex items-center justify-between mb-2">
+                <Label>Recipient Address</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/address-book')}
+                >
+                  <UserCircle className="h-4 w-4 mr-1" />
+                  Address Book
+                </Button>
+              </div>
+              <div className="relative">
+                <Input
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  placeholder="EQD..."
+                  className={`font-mono pr-10 ${
+                    addressValid === true ? 'border-success' : 
+                    addressValid === false ? 'border-destructive' : ''
+                  }`}
+                />
+                {recipient && !isValidatingAddress && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {addressValid ? (
+                      <CheckCircle className="h-5 w-5 text-success" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-destructive" />
+                    )}
+                  </div>
+                )}
+              </div>
+              {addressValid === false && (
+                <p className="text-xs text-destructive mt-1">Invalid TON address</p>
+              )}
             </div>
             
             <div>

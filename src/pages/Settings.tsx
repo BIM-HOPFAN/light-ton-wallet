@@ -1,14 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet, Link2 } from 'lucide-react';
+import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet, Link2, Fingerprint, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/contexts/WalletContext';
 import { deleteWallet, verifyPIN } from '@/lib/storage';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { biometricService } from '@/lib/biometric';
+import { autoLockService } from '@/lib/autolock';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -19,6 +24,89 @@ export default function Settings() {
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [autoLockMinutes, setAutoLockMinutes] = useState(5);
+  
+  useEffect(() => {
+    checkBiometricAvailability();
+    loadSettings();
+  }, []);
+  
+  const checkBiometricAvailability = async () => {
+    const available = await biometricService.isAvailable();
+    setBiometricAvailable(available);
+  };
+  
+  const loadSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('wallet_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (data) {
+        setBiometricEnabled(data.biometric_enabled || false);
+        setAutoLockMinutes(data.auto_lock_minutes || 5);
+        autoLockService.setLockTimeout(data.auto_lock_minutes || 5);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
+  
+  const updateSettings = async (updates: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { error } = await supabase
+        .from('wallet_settings')
+        .upsert({
+          user_id: user.id,
+          ...updates,
+        });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      toast.error('Failed to update settings');
+    }
+  };
+  
+  const handleBiometricToggle = async (enabled: boolean) => {
+    if (enabled && !biometricAvailable) {
+      toast.error('Biometric authentication is not available on this device');
+      return;
+    }
+    
+    if (enabled) {
+      const success = await biometricService.register();
+      if (success) {
+        setBiometricEnabled(true);
+        await updateSettings({ biometric_enabled: true });
+        toast.success('Biometric authentication enabled');
+      } else {
+        toast.error('Failed to enable biometric authentication');
+      }
+    } else {
+      setBiometricEnabled(false);
+      await updateSettings({ biometric_enabled: false });
+      toast.success('Biometric authentication disabled');
+    }
+  };
+  
+  const handleAutoLockChange = async (minutes: string) => {
+    const mins = parseInt(minutes);
+    setAutoLockMinutes(mins);
+    autoLockService.setLockTimeout(mins);
+    await updateSettings({ auto_lock_minutes: mins });
+    toast.success(`Auto-lock set to ${mins} minutes`);
+  };
   
   const handleVerifyPin = async () => {
     const isValid = await verifyPIN(pin);
@@ -92,6 +180,53 @@ export default function Settings() {
         <h1 className="text-3xl font-bold mb-6">Settings</h1>
         
         <div className="space-y-4">
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <Fingerprint className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Biometric Authentication</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {biometricAvailable ? 'Use fingerprint or face ID to unlock' : 'Not available on this device'}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={biometricEnabled}
+                onCheckedChange={handleBiometricToggle}
+                disabled={!biometricAvailable}
+              />
+            </div>
+          </Card>
+          
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Auto-Lock Timer</h3>
+                  <p className="text-sm text-muted-foreground">Lock wallet after inactivity</p>
+                </div>
+              </div>
+              <Select value={autoLockMinutes.toString()} onValueChange={handleAutoLockChange}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 minute</SelectItem>
+                  <SelectItem value="5">5 minutes</SelectItem>
+                  <SelectItem value="15">15 minutes</SelectItem>
+                  <SelectItem value="30">30 minutes</SelectItem>
+                  <SelectItem value="0">Never</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </Card>
+          
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

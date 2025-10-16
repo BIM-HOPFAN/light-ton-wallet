@@ -19,6 +19,10 @@ import ImportWallet from "./pages/ImportWallet";
 import ScanConnect from "./pages/ScanConnect";
 import ConnectedApps from "./pages/ConnectedApps";
 import Install from "./pages/Install";
+import AddressBook from "./pages/AddressBook";
+import NFTGallery from "./pages/NFTGallery";
+import TransactionDetail from "./pages/TransactionDetail";
+import DAppBrowser from "./pages/DAppBrowser";
 import NotFound from "./pages/NotFound";
 import { hasWallet } from "./lib/storage";
 
@@ -50,6 +54,10 @@ const App = () => {
               <Route path="/scan-connect" element={<ScanConnect />} />
               <Route path="/connected-apps" element={<ConnectedApps />} />
               <Route path="/install" element={<Install />} />
+              <Route path="/address-book" element={<AddressBook />} />
+              <Route path="/nft-gallery" element={<NFTGallery />} />
+              <Route path="/transaction/:txHash" element={<TransactionDetail />} />
+              <Route path="/dapp-browser" element={<DAppBrowser />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

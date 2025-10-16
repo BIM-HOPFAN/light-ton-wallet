@@ -44,7 +44,11 @@ export default function TransactionList() {
       ) : (
         <div className="space-y-3">
           {transactions.map((tx) => (
-            <Card key={tx.id} className="p-4 hover:shadow-md transition-smooth cursor-pointer">
+            <Card 
+              key={tx.id} 
+              className="p-4 hover:shadow-md transition-smooth cursor-pointer"
+              onClick={() => window.location.href = `/transaction/${tx.txHash || tx.id}`}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-full ${

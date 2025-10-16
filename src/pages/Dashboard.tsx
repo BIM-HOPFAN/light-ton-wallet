@@ -4,8 +4,10 @@ import { useWallet } from '@/contexts/WalletContext';
 import WalletCard from '@/components/WalletCard';
 import TransactionList from '@/components/TransactionList';
 import { Button } from '@/components/ui/button';
-import { Settings, LogOut, ScanLine, Coins, ArrowRight } from 'lucide-react';
+import { Settings, LogOut, ScanLine, Coins, ArrowRight, Image, Globe, UserCircle } from 'lucide-react';
 import { tonService } from '@/lib/ton';
+import { blockchainService } from '@/lib/blockchain';
+import { autoLockService } from '@/lib/autolock';
 import { deleteWallet } from '@/lib/storage';
 import { toast } from 'sonner';
 import { telegramService } from '@/lib/telegram';
@@ -30,10 +32,19 @@ export default function Dashboard() {
       }
     }
     
-    // Fetch balance
+    // Setup auto-lock
+    autoLockService.setOnLockCallback(() => {
+      setIsLocked(true);
+      navigate('/unlock');
+      toast.info('Wallet locked due to inactivity');
+    });
+    autoLockService.setupActivityListeners();
+    autoLockService.startTimer();
+    
+    // Fetch balance using blockchain service
     const fetchBalance = async () => {
       if (wallet?.address) {
-        const bal = await tonService.getBalance(wallet.address);
+        const bal = await blockchainService.getBalance(wallet.address);
         setBalance(bal);
       }
     };
@@ -41,8 +52,12 @@ export default function Dashboard() {
     fetchBalance();
     const interval = setInterval(fetchBalance, 10000); // Refresh every 10s
     
-    return () => clearInterval(interval);
-  }, [wallet, isLocked, navigate, setBalance]);
+    return () => {
+      clearInterval(interval);
+      autoLockService.stopTimer();
+      autoLockService.removeActivityListeners();
+    };
+  }, [wallet, isLocked, navigate, setBalance, setIsLocked]);
   
   const handleLogout = () => {
     if (confirm('Are you sure you want to log out? Make sure you have your recovery phrase saved.')) {
@@ -92,6 +107,34 @@ export default function Dashboard() {
       
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <WalletCard />
+        
+        {/* Quick Actions */}
+        <div className="grid grid-cols-3 gap-3 my-6">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/address-book')}
+            className="flex flex-col h-auto py-4"
+          >
+            <UserCircle className="h-6 w-6 mb-2" />
+            <span className="text-xs">Addresses</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/nft-gallery')}
+            className="flex flex-col h-auto py-4"
+          >
+            <Image className="h-6 w-6 mb-2" />
+            <span className="text-xs">NFTs</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/dapp-browser')}
+            className="flex flex-col h-auto py-4"
+          >
+            <Globe className="h-6 w-6 mb-2" />
+            <span className="text-xs">DApps</span>
+          </Button>
+        </div>
         
         {/* Bimcoin Earn Promotion */}
         <div className="my-8 relative overflow-hidden rounded-xl border bg-gradient-to-br from-primary/10 via-secondary/10 to-primary/5 p-6 shadow-lg">

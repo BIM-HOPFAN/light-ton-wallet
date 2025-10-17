@@ -58,7 +58,12 @@ export function getTokens(): Token[] {
   try {
     const stored = localStorage.getItem(TOKENS_KEY);
     if (stored) {
-      const storedTokens = JSON.parse(stored);
+      let storedTokens = JSON.parse(stored);
+      
+      // Remove old incorrect Bimcoin token with placeholder address
+      storedTokens = storedTokens.filter(
+        (t: Token) => !(t.symbol === 'BIM' && t.contractAddress === 'EQBimcoin1234567890abcdefghijklmnopqrstuvwxyz_BIM')
+      );
       
       // Merge with default tokens - add any new defaults that aren't already present
       const merged = [...storedTokens];

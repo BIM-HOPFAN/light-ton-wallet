@@ -58,7 +58,24 @@ export function getTokens(): Token[] {
   try {
     const stored = localStorage.getItem(TOKENS_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const storedTokens = JSON.parse(stored);
+      
+      // Merge with default tokens - add any new defaults that aren't already present
+      const merged = [...storedTokens];
+      DEFAULT_TOKENS.forEach(defaultToken => {
+        const exists = merged.find(
+          t => t.symbol === defaultToken.symbol && 
+               t.network === defaultToken.network &&
+               (t.contractAddress === defaultToken.contractAddress || (!t.contractAddress && !defaultToken.contractAddress))
+        );
+        if (!exists) {
+          merged.push(defaultToken);
+        }
+      });
+      
+      // Update localStorage with merged tokens
+      localStorage.setItem(TOKENS_KEY, JSON.stringify(merged));
+      return merged;
     }
     // Initialize with default tokens
     localStorage.setItem(TOKENS_KEY, JSON.stringify(DEFAULT_TOKENS));

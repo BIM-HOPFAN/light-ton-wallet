@@ -34,6 +34,15 @@ export const DEFAULT_TOKENS: Token[] = [
     contractAddress: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs',
     icon: '₮',
   },
+  {
+    id: 'bimcoin',
+    symbol: 'BIM',
+    name: 'Bimcoin',
+    decimals: 9,
+    network: 'TON',
+    contractAddress: 'EQBimcoin1234567890abcdefghijklmnopqrstuvwxyz_BIM',
+    icon: '🪙',
+  },
 ];
 
 export const SUPPORTED_NETWORKS: Network[] = [

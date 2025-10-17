@@ -15,7 +15,7 @@ export default function Onboarding() {
             <Wallet className="h-12 w-12 text-white" />
           </div>
           <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Light Wallet
+            Bimlight Bank
           </h1>
           <p className="text-muted-foreground">
             Your secure gateway to The Open Network

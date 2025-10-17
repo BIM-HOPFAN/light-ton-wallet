@@ -57,7 +57,7 @@ export default function Install() {
             <div>
               <h1 className="text-2xl font-bold mb-2">App Installed!</h1>
               <p className="text-muted-foreground">
-                Light Wallet is now installed on your device. You can access it from your home screen.
+                Bimlight Bank is now installed on your device. You can access it from your home screen.
               </p>
             </div>
             <Button onClick={() => navigate('/')} className="w-full">
@@ -67,7 +67,7 @@ export default function Install() {
         ) : (
           <>
             <div>
-              <h1 className="text-2xl font-bold mb-2">Install Light Wallet</h1>
+              <h1 className="text-2xl font-bold mb-2">Install Bimlight Bank</h1>
               <p className="text-muted-foreground">
                 Install our app to get quick access from your home screen and use it offline.
               </p>

@@ -76,7 +76,7 @@ export default function Dashboard() {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Light Wallet
+            Bimlight Bank
           </h1>
           <div className="flex gap-2">
             <Button 

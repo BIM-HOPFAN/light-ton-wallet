@@ -11,6 +11,7 @@ import { autoLockService } from '@/lib/autolock';
 import { deleteWallet } from '@/lib/storage';
 import { toast } from 'sonner';
 import { telegramService } from '@/lib/telegram';
+import bimlightLogo from '@/assets/bimlight-logo.png';
 
 export default function Dashboard() {
   const { wallet, isLocked, balance, setBalance, setWallet, setIsLocked } = useWallet();
@@ -75,9 +76,7 @@ export default function Dashboard() {
     <div className="min-h-screen">
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Bimlight Bank
-          </h1>
+          <img src={bimlightLogo} alt="Bimlight Bank" className="h-8 w-auto" />
           <div className="flex gap-2">
             <Button 
               variant="ghost" 

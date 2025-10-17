@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Wallet, Lock, Shield, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import bimlightLogo from '@/assets/bimlight-logo.png';
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -11,8 +12,8 @@ export default function Onboarding() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex p-4 bg-gradient-to-br from-primary to-secondary rounded-3xl mb-4 shadow-glow">
-            <Wallet className="h-12 w-12 text-white" />
+          <div className="inline-flex mb-4">
+            <img src={bimlightLogo} alt="Bimlight Bank" className="h-24 w-auto" />
           </div>
           <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Bimlight Bank

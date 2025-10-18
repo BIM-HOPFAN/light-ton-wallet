@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet, Link2, Fingerprint, Clock } from 'lucide-react';
+import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet, Link2, Fingerprint, Clock, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/contexts/WalletContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { deleteWallet, verifyPIN } from '@/lib/storage';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 export default function Settings() {
   const navigate = useNavigate();
   const { wallet, setWallet, setIsLocked } = useWallet();
+  const { signOut } = useAuth();
   const [showMnemonic, setShowMnemonic] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -138,6 +140,12 @@ export default function Settings() {
       toast.success('Wallet deleted');
       navigate('/');
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Signed out successfully');
+    navigate('/auth');
   };
   
   const exportWallet = () => {
@@ -337,6 +345,26 @@ export default function Settings() {
                 onClick={() => setShowDeleteDialog(true)}
               >
                 Delete
+              </Button>
+            </div>
+          </Card>
+          
+          <Card className="p-6 border-primary/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <LogOut className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Sign Out</h3>
+                  <p className="text-sm text-muted-foreground">Sign out of your account</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={handleSignOut}
+              >
+                Sign Out
               </Button>
             </div>
           </Card>

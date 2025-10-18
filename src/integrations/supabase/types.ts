@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      banking_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          metadata: Json | null
+          ngnb_amount: number | null
+          reference: string | null
+          status: string
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json | null
+          ngnb_amount?: number | null
+          reference?: string | null
+          status?: string
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json | null
+          ngnb_amount?: number | null
+          reference?: string | null
+          status?: string
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       connected_dapps: {
         Row: {
           connected_at: string
@@ -76,6 +115,42 @@ export type Database = {
           id?: string
           last_used?: string | null
           permissions?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      kyc_records: {
+        Row: {
+          bvn: string | null
+          created_at: string
+          full_name: string
+          id: string
+          id_number: string | null
+          phone_number: string
+          status: Database["public"]["Enums"]["kyc_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bvn?: string | null
+          created_at?: string
+          full_name: string
+          id?: string
+          id_number?: string | null
+          phone_number: string
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bvn?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          id_number?: string | null
+          phone_number?: string
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -116,6 +191,140 @@ export type Database = {
           nft_address?: string
           user_id?: string
           wallet_address?: string
+        }
+        Relationships: []
+      }
+      ngnb_balances: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          buyer_id: string
+          buyer_notes: string | null
+          created_at: string
+          delivery_address: string | null
+          delivery_confirmed_at: string | null
+          escrow_address: string | null
+          escrow_released_at: string | null
+          escrow_tx_hash: string | null
+          id: string
+          product_id: string
+          quantity: number
+          seller_id: string
+          status: Database["public"]["Enums"]["order_status"]
+          total_bimcoin: number
+          tracking_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          buyer_notes?: string | null
+          created_at?: string
+          delivery_address?: string | null
+          delivery_confirmed_at?: string | null
+          escrow_address?: string | null
+          escrow_released_at?: string | null
+          escrow_tx_hash?: string | null
+          id?: string
+          product_id: string
+          quantity?: number
+          seller_id: string
+          status?: Database["public"]["Enums"]["order_status"]
+          total_bimcoin: number
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          buyer_notes?: string | null
+          created_at?: string
+          delivery_address?: string | null
+          delivery_confirmed_at?: string | null
+          escrow_address?: string | null
+          escrow_released_at?: string | null
+          escrow_tx_hash?: string | null
+          id?: string
+          product_id?: string
+          quantity?: number
+          seller_id?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          total_bimcoin?: number
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          images: Json | null
+          is_active: boolean
+          price_bimcoin: number
+          price_naira: number | null
+          seller_id: string
+          stock_quantity: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          is_active?: boolean
+          price_bimcoin: number
+          price_naira?: number | null
+          seller_id: string
+          stock_quantity?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          is_active?: boolean
+          price_bimcoin?: number
+          price_naira?: number | null
+          seller_id?: string
+          stock_quantity?: number
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -226,7 +435,22 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      kyc_status: "pending" | "approved" | "rejected"
+      order_status:
+        | "pending"
+        | "escrow_locked"
+        | "in_transit"
+        | "delivered"
+        | "completed"
+        | "disputed"
+        | "refunded"
+      transaction_type:
+        | "deposit"
+        | "withdrawal"
+        | "swap"
+        | "purchase"
+        | "escrow_lock"
+        | "escrow_release"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -353,6 +577,25 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      kyc_status: ["pending", "approved", "rejected"],
+      order_status: [
+        "pending",
+        "escrow_locked",
+        "in_transit",
+        "delivered",
+        "completed",
+        "disputed",
+        "refunded",
+      ],
+      transaction_type: [
+        "deposit",
+        "withdrawal",
+        "swap",
+        "purchase",
+        "escrow_lock",
+        "escrow_release",
+      ],
+    },
   },
 } as const

@@ -4,7 +4,7 @@ import { useWallet } from '@/contexts/WalletContext';
 import WalletCard from '@/components/WalletCard';
 import TransactionList from '@/components/TransactionList';
 import { Button } from '@/components/ui/button';
-import { Settings, LogOut, ScanLine, Coins, ArrowRight, Image, Globe, UserCircle } from 'lucide-react';
+import { Settings, LogOut, ScanLine, Coins, ArrowRight, Image, Globe, UserCircle, ShoppingBag, Building2 } from 'lucide-react';
 import { tonService } from '@/lib/ton';
 import { blockchainService } from '@/lib/blockchain';
 import { autoLockService } from '@/lib/autolock';
@@ -107,7 +107,28 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <WalletCard />
         
-        {/* Quick Actions */}
+        {/* Quick Actions - Bimcart & Bank Featured */}
+        <div className="grid grid-cols-2 gap-3 my-6">
+          <Button
+            onClick={() => navigate('/shop')}
+            className="flex flex-col h-24 bg-gradient-to-br from-primary to-primary/80 hover:opacity-90"
+          >
+            <ShoppingBag className="h-8 w-8 mb-2" />
+            <span className="font-semibold">Bimcart Shop</span>
+            <span className="text-xs opacity-80">Escrow Protected</span>
+          </Button>
+          <Button
+            onClick={() => navigate('/bank')}
+            variant="outline"
+            className="flex flex-col h-24 border-2"
+          >
+            <Building2 className="h-8 w-8 mb-2" />
+            <span className="font-semibold">Bimlight Bank</span>
+            <span className="text-xs text-muted-foreground">Naira ⇄ NGNB</span>
+          </Button>
+        </div>
+
+        {/* Additional Quick Actions */}
         <div className="grid grid-cols-3 gap-3 my-6">
           <Button
             variant="outline"

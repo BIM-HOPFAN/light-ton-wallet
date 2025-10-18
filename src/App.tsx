@@ -23,6 +23,11 @@ import AddressBook from "./pages/AddressBook";
 import NFTGallery from "./pages/NFTGallery";
 import TransactionDetail from "./pages/TransactionDetail";
 import DAppBrowser from "./pages/DAppBrowser";
+import Shop from "./pages/Shop";
+import ProductDetail from "./pages/ProductDetail";
+import Bank from "./pages/Bank";
+import MyOrders from "./pages/MyOrders";
+import Swap from "./pages/Swap";
 import NotFound from "./pages/NotFound";
 import { hasWallet } from "./lib/storage";
 
@@ -58,6 +63,11 @@ const App = () => {
               <Route path="/nft-gallery" element={<NFTGallery />} />
               <Route path="/transaction/:txHash" element={<TransactionDetail />} />
               <Route path="/dapp-browser" element={<DAppBrowser />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/bank" element={<Bank />} />
+              <Route path="/my-orders" element={<MyOrders />} />
+              <Route path="/swap" element={<Swap />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

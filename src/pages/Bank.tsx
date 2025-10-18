@@ -11,6 +11,8 @@ import { Separator } from '@/components/ui/separator';
 import { Building2, ArrowUpRight, ArrowDownLeft, RefreshCw, Wallet, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ProtectedFeature } from '@/components/ProtectedFeature';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NGNBBalance {
   balance: number;
@@ -27,7 +29,16 @@ interface BankingTransaction {
 }
 
 export default function Bank() {
+  return (
+    <ProtectedFeature featureName="Bimlight Bank">
+      <BankContent />
+    </ProtectedFeature>
+  );
+}
+
+function BankContent() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [ngnbBalance, setNgnbBalance] = useState<number>(0);
   const [transactions, setTransactions] = useState<BankingTransaction[]>([]);
   const [loading, setLoading] = useState(true);

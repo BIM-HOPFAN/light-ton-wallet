@@ -7,9 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, ArrowDownUp, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProtectedFeature } from '@/components/ProtectedFeature';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Swap() {
+  return (
+    <ProtectedFeature featureName="Swap">
+      <SwapContent />
+    </ProtectedFeature>
+  );
+}
+
+function SwapContent() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [ngnbBalance, setNgnbBalance] = useState<number>(0);
   const [ngnbAmount, setNgnbAmount] = useState('');
   const [bimcoinAmount, setBimcoinAmount] = useState('');

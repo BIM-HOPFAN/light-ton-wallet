@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ShoppingBag, Search, Package, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProtectedFeature } from '@/components/ProtectedFeature';
 
 interface Product {
   id: string;
@@ -22,6 +23,14 @@ interface Product {
 }
 
 export default function Shop() {
+  return (
+    <ProtectedFeature featureName="Bimcart Shop">
+      <ShopContent />
+    </ProtectedFeature>
+  );
+}
+
+function ShopContent() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);

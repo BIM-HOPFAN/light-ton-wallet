@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, ArrowLeft, CheckCircle, Clock, Truck, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ProtectedFeature } from '@/components/ProtectedFeature';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Order {
   id: string;
@@ -25,7 +27,16 @@ interface Order {
 }
 
 export default function MyOrders() {
+  return (
+    <ProtectedFeature featureName="My Orders">
+      <MyOrdersContent />
+    </ProtectedFeature>
+  );
+}
+
+function MyOrdersContent() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [buyerOrders, setBuyerOrders] = useState<Order[]>([]);
   const [sellerOrders, setSellerOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);

@@ -35,71 +35,58 @@ import { hasWallet } from "./lib/storage";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoutes() {
-  const { user, loading } = useAuth();
+const App = () => {
   const walletExists = hasWallet();
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (!walletExists) {
-    return <Navigate to="/create" replace />;
-  }
-
+  
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/unlock" />} />
-      <Route path="/create" element={<CreateWallet />} />
-      <Route path="/restore" element={<RestoreWallet />} />
-      <Route path="/unlock" element={<Unlock />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/send" element={<Send />} />
-      <Route path="/receive" element={<Receive />} />
-      <Route path="/tokens" element={<Tokens />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/wallet-manager" element={<WalletManager />} />
-      <Route path="/wallet-manager/create" element={<AddWallet />} />
-      <Route path="/wallet-manager/import" element={<ImportWallet />} />
-      <Route path="/scan-connect" element={<ScanConnect />} />
-      <Route path="/connected-apps" element={<ConnectedApps />} />
-      <Route path="/install" element={<Install />} />
-      <Route path="/address-book" element={<AddressBook />} />
-      <Route path="/nft-gallery" element={<NFTGallery />} />
-      <Route path="/transaction/:txHash" element={<TransactionDetail />} />
-      <Route path="/dapp-browser" element={<DAppBrowser />} />
-      <Route path="/shop" element={<Shop />} />
-      <Route path="/product/:id" element={<ProductDetail />} />
-      <Route path="/bank" element={<Bank />} />
-      <Route path="/my-orders" element={<MyOrders />} />
-      <Route path="/swap" element={<Swap />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <WalletProvider>
+            <BrowserRouter>
+              <Toaster />
+              <Sonner />
+              <Routes>
+                {/* Auth route - optional for wallet, required for bank/shop */}
+                <Route path="/auth" element={<Auth />} />
+                
+                {/* Wallet-first flow - no auth required */}
+                <Route path="/" element={walletExists ? <Navigate to="/unlock" /> : <Onboarding />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/create" element={<CreateWallet />} />
+                <Route path="/restore" element={<RestoreWallet />} />
+                <Route path="/unlock" element={<Unlock />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/send" element={<Send />} />
+                <Route path="/receive" element={<Receive />} />
+                <Route path="/tokens" element={<Tokens />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/wallet-manager" element={<WalletManager />} />
+                <Route path="/wallet-manager/create" element={<AddWallet />} />
+                <Route path="/wallet-manager/import" element={<ImportWallet />} />
+                <Route path="/scan-connect" element={<ScanConnect />} />
+                <Route path="/connected-apps" element={<ConnectedApps />} />
+                <Route path="/install" element={<Install />} />
+                <Route path="/address-book" element={<AddressBook />} />
+                <Route path="/nft-gallery" element={<NFTGallery />} />
+                <Route path="/transaction/:txHash" element={<TransactionDetail />} />
+                <Route path="/dapp-browser" element={<DAppBrowser />} />
+                
+                {/* Backend features - auth required (handled in components) */}
+                <Route path="/shop" element={<Shop />} />
+                <Route path="/product/:id" element={<ProductDetail />} />
+                <Route path="/bank" element={<Bank />} />
+                <Route path="/my-orders" element={<MyOrders />} />
+                <Route path="/swap" element={<Swap />} />
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </WalletProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
-}
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <WalletProvider>
-          <BrowserRouter>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="*" element={<ProtectedRoutes />} />
-            </Routes>
-          </BrowserRouter>
-        </WalletProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+};
 
 export default App;

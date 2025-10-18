@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,8 +16,16 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnUrl = (location.state as any)?.returnUrl || '/dashboard';
+
+  useEffect(() => {
+    if (user) {
+      navigate(returnUrl, { replace: true });
+    }
+  }, [user, navigate, returnUrl]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +52,7 @@ export default function Auth() {
       }
     } else {
       toast.success('Account created successfully!');
-      navigate('/');
+      navigate(returnUrl, { replace: true });
     }
   };
 
@@ -69,7 +77,7 @@ export default function Auth() {
       toast.error('Invalid email or password');
     } else {
       toast.success('Welcome back!');
-      navigate('/');
+      navigate(returnUrl, { replace: true });
     }
   };
 

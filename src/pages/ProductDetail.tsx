@@ -11,6 +11,8 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, ShoppingBag, Shield, Package, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ProtectedFeature } from '@/components/ProtectedFeature';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Product {
   id: string;
@@ -25,8 +27,17 @@ interface Product {
 }
 
 export default function ProductDetail() {
+  return (
+    <ProtectedFeature featureName="Product Details">
+      <ProductDetailContent />
+    </ProtectedFeature>
+  );
+}
+
+function ProductDetailContent() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);

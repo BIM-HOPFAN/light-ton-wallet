@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/contexts/WalletContext';
+import { useAuth } from '@/contexts/AuthContext';
 import WalletCard from '@/components/WalletCard';
 import TransactionList from '@/components/TransactionList';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import bimlightLogo from '@/assets/bimlight-logo.png';
 
 export default function Dashboard() {
   const { wallet, isLocked, balance, setBalance, setWallet, setIsLocked } = useWallet();
+  const { user } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -111,20 +113,30 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 gap-3 my-6">
           <Button
             onClick={() => navigate('/shop')}
-            className="flex flex-col h-24 bg-gradient-to-br from-primary to-primary/80 hover:opacity-90"
+            className="flex flex-col h-24 bg-gradient-to-br from-primary to-primary/80 hover:opacity-90 relative"
           >
             <ShoppingBag className="h-8 w-8 mb-2" />
             <span className="font-semibold">Bimcart Shop</span>
             <span className="text-xs opacity-80">Escrow Protected</span>
+            {!user && (
+              <span className="absolute top-1 right-1 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">
+                Sign in required
+              </span>
+            )}
           </Button>
           <Button
             onClick={() => navigate('/bank')}
             variant="outline"
-            className="flex flex-col h-24 border-2"
+            className="flex flex-col h-24 border-2 relative"
           >
             <Building2 className="h-8 w-8 mb-2" />
             <span className="font-semibold">Bimlight Bank</span>
             <span className="text-xs text-muted-foreground">Naira ⇄ NGNB</span>
+            {!user && (
+              <span className="absolute top-1 right-1 text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
+                Sign in required
+              </span>
+            )}
           </Button>
         </div>
 

@@ -65,8 +65,21 @@ export function getTokens(): Token[] {
         (t: Token) => !(t.symbol === 'BIM' && t.contractAddress === 'EQBimcoin1234567890abcdefghijklmnopqrstuvwxyz_BIM')
       );
       
+      // Remove duplicates based on symbol, network, and contract address
+      const uniqueTokens = storedTokens.reduce((acc: Token[], current: Token) => {
+        const duplicate = acc.find(
+          t => t.symbol === current.symbol && 
+               t.network === current.network &&
+               (t.contractAddress === current.contractAddress || (!t.contractAddress && !current.contractAddress))
+        );
+        if (!duplicate) {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+      
       // Merge with default tokens - add any new defaults that aren't already present
-      const merged = [...storedTokens];
+      const merged = [...uniqueTokens];
       DEFAULT_TOKENS.forEach(defaultToken => {
         const exists = merged.find(
           t => t.symbol === defaultToken.symbol && 
@@ -78,7 +91,7 @@ export function getTokens(): Token[] {
         }
       });
       
-      // Update localStorage with merged tokens
+      // Update localStorage with cleaned tokens
       localStorage.setItem(TOKENS_KEY, JSON.stringify(merged));
       return merged;
     }

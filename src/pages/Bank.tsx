@@ -28,6 +28,14 @@ interface BankingTransaction {
   reference: string;
 }
 
+interface VirtualAccount {
+  id: string;
+  account_number: string;
+  account_name: string;
+  bank_name: string;
+  bank_code: string;
+}
+
 export default function Bank() {
   return (
     <ProtectedFeature featureName="Bimlight Bank">
@@ -44,13 +52,66 @@ function BankContent() {
   const [loading, setLoading] = useState(true);
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [recipientAccount, setRecipientAccount] = useState('');
+  const [recipientBank, setRecipientBank] = useState('');
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [virtualAccount, setVirtualAccount] = useState<VirtualAccount | null>(null);
 
   useEffect(() => {
     fetchBankingData();
+    fetchVirtualAccount();
   }, []);
+
+  const fetchVirtualAccount = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke('monnify', {
+        body: { action: 'get_virtual_account' }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.data) {
+        setVirtualAccount(data.data);
+      } else {
+        // Create virtual account if it doesn't exist
+        await createVirtualAccount();
+      }
+    } catch (error) {
+      console.error('Error fetching virtual account:', error);
+    }
+  };
+
+  const createVirtualAccount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const accountName = `Bimlight - ${user.email?.split('@')[0] || 'User'}`;
+      
+      const { data, error } = await supabase.functions.invoke('monnify', {
+        body: { 
+          action: 'create_virtual_account',
+          accountName 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.data) {
+        setVirtualAccount(data.data);
+        toast.success('Virtual account created successfully');
+      }
+    } catch (error) {
+      console.error('Error creating virtual account:', error);
+      toast.error('Failed to create virtual account');
+    }
+  };
 
   const fetchBankingData = async () => {
     try {
@@ -94,56 +155,10 @@ function BankContent() {
     }
   };
 
-  const handleDeposit = async () => {
-    const amount = parseFloat(depositAmount);
-    if (!amount || amount <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
-    }
-
-    setProcessing(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      // Create deposit transaction
-      const reference = `DEP${Date.now()}`;
-      const { error: txError } = await supabase
-        .from('banking_transactions')
-        .insert({
-          user_id: user.id,
-          transaction_type: 'deposit',
-          amount: amount,
-          currency: 'NGN',
-          ngnb_amount: amount,
-          status: 'completed',
-          reference
-        });
-
-      if (txError) throw txError;
-
-      // Update NGNB balance
-      const newBalance = ngnbBalance + amount;
-      const { error: balanceError } = await supabase
-        .from('ngnb_balances')
-        .update({ balance: newBalance })
-        .eq('user_id', user.id);
-
-      if (balanceError) throw balanceError;
-
-      setNgnbBalance(newBalance);
-      setDepositAmount('');
-      setShowDeposit(false);
-      toast.success(`₦${amount.toFixed(2)} deposited successfully`, {
-        description: `${amount.toFixed(2)} NGNB minted`
-      });
-      fetchBankingData();
-    } catch (error) {
-      console.error('Deposit error:', error);
-      toast.error('Deposit failed');
-    } finally {
-      setProcessing(false);
-    }
+  const handleDeposit = () => {
+    // Show account details for deposit
+    setShowAccountDetails(true);
+    setShowDeposit(false);
   };
 
   const handleWithdraw = async () => {
@@ -158,46 +173,42 @@ function BankContent() {
       return;
     }
 
+    if (!recipientAccount || !recipientBank) {
+      toast.error('Please enter recipient account details');
+      return;
+    }
+
     setProcessing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      // Create withdrawal transaction
-      const reference = `WD${Date.now()}`;
-      const { error: txError } = await supabase
-        .from('banking_transactions')
-        .insert({
-          user_id: user.id,
-          transaction_type: 'withdrawal',
-          amount: amount,
-          currency: 'NGN',
-          ngnb_amount: amount,
-          status: 'completed',
-          reference
-        });
-
-      if (txError) throw txError;
-
-      // Update NGNB balance
-      const newBalance = ngnbBalance - amount;
-      const { error: balanceError } = await supabase
-        .from('ngnb_balances')
-        .update({ balance: newBalance })
-        .eq('user_id', user.id);
-
-      if (balanceError) throw balanceError;
-
-      setNgnbBalance(newBalance);
-      setWithdrawAmount('');
-      setShowWithdraw(false);
-      toast.success(`₦${amount.toFixed(2)} withdrawn`, {
-        description: `${amount.toFixed(2)} NGNB burned`
+      const { data, error } = await supabase.functions.invoke('monnify', {
+        body: { 
+          action: 'initiate_transfer',
+          amount,
+          recipientAccountNumber: recipientAccount,
+          recipientBankCode: recipientBank,
+          narration: 'Transfer from Bimlight'
+        }
       });
-      fetchBankingData();
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setNgnbBalance(prev => prev - amount);
+        setWithdrawAmount('');
+        setRecipientAccount('');
+        setRecipientBank('');
+        setShowWithdraw(false);
+        toast.success(`₦${amount.toFixed(2)} withdrawn successfully`, {
+          description: `${amount.toFixed(2)} NGNB burned`
+        });
+        fetchBankingData();
+      } else {
+        throw new Error(data?.error || 'Transfer failed');
+      }
     } catch (error) {
       console.error('Withdrawal error:', error);
-      toast.error('Withdrawal failed');
+      const errorMessage = error instanceof Error ? error.message : 'Withdrawal failed';
+      toast.error(errorMessage);
     } finally {
       setProcessing(false);
     }
@@ -240,6 +251,14 @@ function BankContent() {
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
+            {virtualAccount && (
+              <div className="bg-background/50 p-3 rounded-lg mb-2 text-sm">
+                <div className="font-medium mb-1">Your Account</div>
+                <div className="text-muted-foreground">
+                  {virtualAccount.account_number} • {virtualAccount.bank_name}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <Button onClick={() => setShowDeposit(true)} className="w-full">
                 <ArrowDownLeft className="h-4 w-4 mr-2" />
@@ -331,34 +350,88 @@ function BankContent() {
       <Dialog open={showDeposit} onOpenChange={setShowDeposit}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Deposit Naira</DialogTitle>
+            <DialogTitle>Deposit Options</DialogTitle>
             <DialogDescription>
-              Deposit Naira to mint NGNB tokens
+              Choose how you want to deposit funds
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="depositAmount">Amount (₦)</Label>
-              <Input
-                id="depositAmount"
-                type="number"
-                placeholder="0.00"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
-                className="text-lg"
-              />
-            </div>
-            {depositAmount && parseFloat(depositAmount) > 0 && (
-              <div className="bg-primary/10 p-3 rounded text-sm">
-                You will receive: <span className="font-bold">{parseFloat(depositAmount).toFixed(2)} NGNB</span>
+          <div className="space-y-3">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start h-auto p-4"
+              onClick={handleDeposit}
+            >
+              <div className="text-left">
+                <div className="font-medium">Bank Transfer (Naira)</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Transfer from any Nigerian bank
+                </div>
               </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeposit(false)}>Cancel</Button>
-            <Button onClick={handleDeposit} disabled={processing}>
-              {processing ? 'Processing...' : 'Deposit'}
             </Button>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start h-auto p-4"
+              onClick={() => toast.info('USD deposit coming soon')}
+            >
+              <div className="text-left">
+                <div className="font-medium">USD Deposit</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Deposit USD and convert to NGNB
+                </div>
+              </div>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start h-auto p-4"
+              onClick={() => toast.info('Crypto deposit coming soon')}
+            >
+              <div className="text-left">
+                <div className="font-medium">Crypto Deposit</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Deposit crypto and swap to NGNB
+                </div>
+              </div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Account Details Dialog */}
+      <Dialog open={showAccountDetails} onOpenChange={setShowAccountDetails}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Your Virtual Account</DialogTitle>
+            <DialogDescription>
+              Transfer to this account to fund your Bimlight wallet
+            </DialogDescription>
+          </DialogHeader>
+          {virtualAccount ? (
+            <div className="space-y-4">
+              <div className="bg-primary/10 p-4 rounded-lg space-y-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Account Number</Label>
+                  <div className="text-2xl font-bold">{virtualAccount.account_number}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Account Name</Label>
+                  <div className="font-medium">{virtualAccount.account_name}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Bank Name</Label>
+                  <div className="font-medium">{virtualAccount.bank_name}</div>
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Transfer any amount from your bank app. Your NGNB will be credited automatically within seconds.
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Loading account details...</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setShowAccountDetails(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -369,7 +442,7 @@ function BankContent() {
           <DialogHeader>
             <DialogTitle>Withdraw to Bank</DialogTitle>
             <DialogDescription>
-              Burn NGNB to withdraw Naira to your bank account
+              Burn NGNB to withdraw Naira to any Nigerian bank account
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -385,6 +458,29 @@ function BankContent() {
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Available: ₦{ngnbBalance.toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="recipientAccount">Recipient Account Number</Label>
+              <Input
+                id="recipientAccount"
+                type="text"
+                placeholder="0123456789"
+                value={recipientAccount}
+                onChange={(e) => setRecipientAccount(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="recipientBank">Recipient Bank Code</Label>
+              <Input
+                id="recipientBank"
+                type="text"
+                placeholder="e.g., 058 for GTBank"
+                value={recipientBank}
+                onChange={(e) => setRecipientBank(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Common codes: GTB=058, Access=044, Zenith=057, First=011, UBA=033
               </p>
             </div>
             {withdrawAmount && parseFloat(withdrawAmount) > 0 && (

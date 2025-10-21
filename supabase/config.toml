@@ -1,1 +1,7 @@
 project_id = "iwnrzusyyfboidbhtgfd"
+
+[functions.monnify]
+verify_jwt = true
+
+[functions.monnify-webhook]
+verify_jwt = false

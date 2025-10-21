@@ -385,6 +385,45 @@ export type Database = {
         }
         Relationships: []
       }
+      virtual_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          account_reference: string
+          bank_code: string
+          bank_name: string
+          created_at: string
+          currency_code: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          account_reference: string
+          bank_code?: string
+          bank_name?: string
+          created_at?: string
+          currency_code?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          account_reference?: string
+          bank_code?: string
+          bank_name?: string
+          created_at?: string
+          currency_code?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_settings: {
         Row: {
           auto_lock_minutes: number | null

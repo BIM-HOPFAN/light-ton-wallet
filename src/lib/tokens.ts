@@ -65,31 +65,26 @@ export function getTokens(): Token[] {
         (t: Token) => !(t.symbol === 'BIM' && t.contractAddress === 'EQBimcoin1234567890abcdefghijklmnopqrstuvwxyz_BIM')
       );
       
-      // Remove duplicates based on symbol, network, and contract address
-      const uniqueTokens = storedTokens.reduce((acc: Token[], current: Token) => {
-        const duplicate = acc.find(
-          t => t.symbol === current.symbol && 
-               t.network === current.network &&
-               (t.contractAddress === current.contractAddress || (!t.contractAddress && !current.contractAddress))
-        );
-        if (!duplicate) {
-          acc.push(current);
-        }
-        return acc;
-      }, []);
+      // Start with default tokens as base
+      const tokenMap = new Map<string, Token>();
       
-      // Merge with default tokens - add any new defaults that aren't already present
-      const merged = [...uniqueTokens];
-      DEFAULT_TOKENS.forEach(defaultToken => {
-        const exists = merged.find(
-          t => t.symbol === defaultToken.symbol && 
-               t.network === defaultToken.network &&
-               (t.contractAddress === defaultToken.contractAddress || (!t.contractAddress && !defaultToken.contractAddress))
-        );
-        if (!exists) {
-          merged.push(defaultToken);
+      // Add default tokens first
+      DEFAULT_TOKENS.forEach(token => {
+        const key = `${token.symbol}-${token.network}-${token.contractAddress || 'native'}`;
+        tokenMap.set(key, token);
+      });
+      
+      // Add stored custom tokens (will not override defaults due to Map)
+      storedTokens.forEach((token: Token) => {
+        const key = `${token.symbol}-${token.network}-${token.contractAddress || 'native'}`;
+        // Only add if not already in map (preserves defaults, adds new custom tokens)
+        if (!tokenMap.has(key)) {
+          tokenMap.set(key, token);
         }
       });
+      
+      // Convert map back to array
+      const merged = Array.from(tokenMap.values());
       
       // Update localStorage with cleaned tokens
       localStorage.setItem(TOKENS_KEY, JSON.stringify(merged));

@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.monnify-webhook]
 verify_jwt = false
+
+[functions.ngnb-treasury]
+verify_jwt = false

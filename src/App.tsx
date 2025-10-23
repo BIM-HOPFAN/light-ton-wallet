@@ -29,6 +29,7 @@ import ProductDetail from "./pages/ProductDetail";
 import Bank from "./pages/Bank";
 import MyOrders from "./pages/MyOrders";
 import Swap from "./pages/Swap";
+import NGNBSwap from "./pages/NGNBSwap";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { hasWallet } from "./lib/storage";
@@ -78,6 +79,7 @@ const App = () => {
                 <Route path="/bank" element={<Bank />} />
                 <Route path="/my-orders" element={<MyOrders />} />
                 <Route path="/swap" element={<Swap />} />
+                <Route path="/ngnb-swap" element={<NGNBSwap />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

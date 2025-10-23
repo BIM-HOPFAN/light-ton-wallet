@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Building2, ArrowUpRight, ArrowDownLeft, RefreshCw, Wallet, ShieldCheck } from 'lucide-react';
+import { Building2, ArrowUpRight, ArrowDownLeft, RefreshCw, Wallet, ShieldCheck, ArrowLeftRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ProtectedFeature } from '@/components/ProtectedFeature';
@@ -269,10 +269,16 @@ function BankContent() {
                 Withdraw
               </Button>
             </div>
-            <Button variant="secondary" className="w-full" onClick={() => navigate('/swap')}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Swap NGNB to Bimcoin
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="secondary" className="w-full" onClick={() => navigate('/swap')}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Swap to Bimcoin
+              </Button>
+              <Button variant="secondary" className="w-full" onClick={() => navigate('/ngnb-swap')}>
+                <ArrowLeftRight className="h-4 w-4 mr-2" />
+                Bank ⇄ Wallet
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

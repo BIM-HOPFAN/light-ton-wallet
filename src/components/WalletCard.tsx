@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Send, Download, Coins, ChevronDown, Network } from 'lucide-react';
+import { Copy, Send, Download, Coins, ChevronDown, Network, ArrowLeftRight } from 'lucide-react';
 import { useWallet } from '@/contexts/WalletContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -9,9 +9,11 @@ import { getTokens, Token } from '@/lib/tokens';
 import { blockchainService, Network as NetworkType } from '@/lib/blockchain';
 import { currencyService, Currency } from '@/lib/currency';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function WalletCard() {
   const { wallet, balance } = useWallet();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [tokens, setTokens] = useState<Token[]>([]);
   const [showAllTokens, setShowAllTokens] = useState(false);
@@ -166,6 +168,17 @@ export default function WalletCard() {
           Receive
         </Button>
       </div>
+      
+      {user && tokens.find(t => t.symbol === 'NGNB') && (
+        <Button 
+          variant="secondary" 
+          className="w-full mt-3"
+          onClick={() => navigate('/ngnb-swap')}
+        >
+          <ArrowLeftRight className="mr-2 h-4 w-4" />
+          Swap NGNB (Bank ⇄ Wallet)
+        </Button>
+      )}
     </Card>
   );
 }

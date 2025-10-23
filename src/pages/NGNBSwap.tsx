@@ -10,6 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@/contexts/WalletContext';
 import { ProtectedFeature } from '@/components/ProtectedFeature';
 import { blockchainService } from '@/lib/blockchain';
+import { tonService } from '@/lib/ton';
+import { decryptMnemonic } from '@/lib/crypto';
+import { getActiveWallet } from '@/lib/storage';
 
 const TREASURY_ADDRESS = 'UQCv2zOQoWzM8HI5jnNs8KJQngGNHfwnJ4n7DH8gT3wAt_Yk';
 const NGNB_CONTRACT = 'EQBqvuMEkR9XHTE0qRVzIJ7gVSxVvB93757VV3nNEhKwb06q';
@@ -126,17 +129,101 @@ function NGNBSwapContent() {
         });
       } else {
         // Swap wallet NGNB to internal NGNB
-        // Note: This requires user to send tokens to treasury first
-        // Then we credit their internal balance
         
-        toast({
-          title: 'Send NGNB Tokens',
-          description: `Please send ${swapAmount} NGNB tokens to treasury: ${TREASURY_ADDRESS.slice(0, 8)}... then confirm`,
+        // Get stored wallet with encrypted mnemonic
+        const storedWallet = getActiveWallet();
+        if (!storedWallet) {
+          toast({
+            title: 'Wallet Error',
+            description: 'Unable to access wallet',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Prompt for PIN to decrypt wallet
+        const pin = prompt('Enter your PIN to confirm the swap:');
+        if (!pin) {
+          toast({
+            title: 'Cancelled',
+            description: 'Swap cancelled',
+          });
+          return;
+        }
+
+        // Get decrypted mnemonic
+        const mnemonic = await decryptMnemonic(storedWallet.encrypted, pin);
+        if (!mnemonic) {
+          toast({
+            title: 'Invalid PIN',
+            description: 'Unable to decrypt wallet. Please check your PIN.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Send NGNB tokens to treasury
+        const result = await tonService.sendJetton({
+          mnemonic,
+          jettonMasterAddress: NGNB_CONTRACT,
+          recipientAddress: TREASURY_ADDRESS,
+          amount: swapAmount.toString(),
+          decimals: 9
         });
 
-        // For now, just show the instruction
-        // In production, you'd verify the blockchain transaction first
-        return;
+        if (!result.success) {
+          throw new Error(result.error || 'Token transfer failed');
+        }
+
+        // Credit internal NGNB balance
+        const newBalance = parseFloat(bankBalance) + swapAmount;
+        const { error: updateError } = await supabase
+          .from('ngnb_balances')
+          .update({ balance: newBalance })
+          .eq('user_id', user.id);
+
+        if (updateError) {
+          // If balance update fails, we should handle this carefully
+          // Transaction already sent, so we record it for manual reconciliation
+          await supabase.from('banking_transactions').insert([{
+            user_id: user.id,
+            transaction_type: 'swap_to_bank',
+            amount: swapAmount,
+            ngnb_amount: swapAmount,
+            currency: 'NGNB',
+            status: 'pending',
+            reference: result.txHash,
+            metadata: {
+              wallet_address: wallet.address,
+              treasury_address: TREASURY_ADDRESS,
+              direction: 'wallet_to_bank',
+              error: 'balance_update_failed'
+            }
+          }]);
+          
+          throw new Error('Balance update failed. Transaction recorded for review.');
+        }
+
+        // Record successful transaction
+        await supabase.from('banking_transactions').insert([{
+          user_id: user.id,
+          transaction_type: 'swap_to_bank',
+          amount: swapAmount,
+          ngnb_amount: swapAmount,
+          currency: 'NGNB',
+          status: 'completed',
+          reference: result.txHash,
+          metadata: {
+            wallet_address: wallet.address,
+            treasury_address: TREASURY_ADDRESS,
+            direction: 'wallet_to_bank'
+          }
+        }]);
+
+        toast({
+          title: 'Swap Successful',
+          description: `${swapAmount} NGNB swapped to Bank successfully`,
+        });
       }
 
       setAmount('');

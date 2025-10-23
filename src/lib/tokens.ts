@@ -43,6 +43,15 @@ export const DEFAULT_TOKENS: Token[] = [
     contractAddress: 'EQB0ePLIUc02kwXNA7ulK-vlotIxIqrEfD0tBC53Bmz6DCRO',
     icon: '🪙',
   },
+  {
+    id: 'ngnb',
+    symbol: 'NGNB',
+    name: 'Bimlight NGN',
+    decimals: 9,
+    network: 'TON',
+    contractAddress: 'EQBqvuMEkR9XHTE0qRVzIJ7gVSxVvB93757VV3nNEhKwb06q',
+    icon: '₦',
+  },
 ];
 
 export const SUPPORTED_NETWORKS: Network[] = [

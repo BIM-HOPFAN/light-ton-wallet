@@ -101,7 +101,7 @@ function NGNBSwapContent() {
         // 2. Record transaction
         await supabase.from('banking_transactions').insert([{
           user_id: user.id,
-          transaction_type: 'swap_to_wallet' as const,
+          transaction_type: 'swap_to_wallet',
           amount: swapAmount,
           ngnb_amount: swapAmount,
           currency: 'NGNB',

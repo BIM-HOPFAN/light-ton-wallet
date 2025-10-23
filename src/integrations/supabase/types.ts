@@ -490,6 +490,8 @@ export type Database = {
         | "purchase"
         | "escrow_lock"
         | "escrow_release"
+        | "swap_to_wallet"
+        | "swap_to_bank"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -634,6 +636,8 @@ export const Constants = {
         "purchase",
         "escrow_lock",
         "escrow_release",
+        "swap_to_wallet",
+        "swap_to_bank",
       ],
     },
   },

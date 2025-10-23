@@ -9,8 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@/contexts/WalletContext';
 import { ProtectedFeature } from '@/components/ProtectedFeature';
+import { blockchainService } from '@/lib/blockchain';
 
 const TREASURY_ADDRESS = 'UQCv2zOQoWzM8HI5jnNs8KJQngGNHfwnJ4n7DH8gT3wAt_Yk';
+const NGNB_CONTRACT = 'EQBqvuMEkR9XHTE0qRVzIJ7gVSxVvB93757VV3nNEhKwb06q';
 
 function NGNBSwapContent() {
   const navigate = useNavigate();
@@ -42,9 +44,14 @@ function NGNBSwapContent() {
         setBankBalance(balanceData.balance.toString());
       }
 
-      // Wallet NGNB balance would come from blockchain
-      // For now, set to 0 - would need TON integration
-      setWalletBalance('0.00');
+      // Fetch actual NGNB token balance from blockchain
+      if (wallet?.address) {
+        const tokenBalance = await blockchainService.getTokenBalance(
+          wallet.address,
+          NGNB_CONTRACT
+        );
+        setWalletBalance(tokenBalance);
+      }
     } catch (error) {
       console.error('Error fetching balances:', error);
     }

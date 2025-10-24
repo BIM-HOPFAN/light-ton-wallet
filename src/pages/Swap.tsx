@@ -86,6 +86,39 @@ function SwapContent() {
 
       const bimAmount = parseFloat(bimcoinAmount);
 
+      // Update NGNB balance
+      const newNgnbBalance = ngnbBalance - amount;
+      const { error: balanceError } = await supabase
+        .from('ngnb_balances')
+        .update({ balance: newNgnbBalance })
+        .eq('user_id', user.id);
+
+      if (balanceError) throw balanceError;
+
+      // Credit Bimcoin balance
+      const { data: existingBimcoin } = await supabase
+        .from('bimcoin_balances')
+        .select('balance')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const newBimcoinBalance = existingBimcoin
+        ? parseFloat(existingBimcoin.balance.toString()) + bimAmount
+        : bimAmount;
+
+      if (existingBimcoin) {
+        const { error: bimcoinError } = await supabase
+          .from('bimcoin_balances')
+          .update({ balance: newBimcoinBalance })
+          .eq('user_id', user.id);
+        if (bimcoinError) throw bimcoinError;
+      } else {
+        const { error: bimcoinError } = await supabase
+          .from('bimcoin_balances')
+          .insert([{ user_id: user.id, balance: newBimcoinBalance }]);
+        if (bimcoinError) throw bimcoinError;
+      }
+
       // Record swap transaction
       const { error: txError } = await supabase
         .from('banking_transactions')
@@ -100,15 +133,6 @@ function SwapContent() {
         });
 
       if (txError) throw txError;
-
-      // Update NGNB balance
-      const newBalance = ngnbBalance - amount;
-      const { error: balanceError } = await supabase
-        .from('ngnb_balances')
-        .update({ balance: newBalance })
-        .eq('user_id', user.id);
-
-      if (balanceError) throw balanceError;
 
       toast.success(`Swapped ${amount} NGNB to ${bimAmount} Bimcoin`, {
         description: 'Bimcoin will appear in your wallet'

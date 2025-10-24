@@ -9,6 +9,7 @@ const corsHeaders = {
 };
 
 const NGNB_CONTRACT = 'EQBqvuMEkR9XHTE0qRVzIJ7gVSxVvB93757VV3nNEhKwb06q';
+const BIMCOIN_CONTRACT = 'UQCv2zOQoWzM8HI5jnNs8KJQngGNHfwnJ4n7DH8gT3wAt_Yk';
 const TON_ENDPOINT = 'https://toncenter.com/api/v2/jsonRPC'; // Use mainnet
 
 interface ProcessSwapRequest {
@@ -31,12 +32,12 @@ serve(async (req) => {
     if (action === 'process_swaps') {
       console.log('Processing pending swaps...');
 
-      // Get pending swap_to_wallet transactions
+      // Get pending swap transactions (both NGNB and Bimcoin)
       const { data: pendingSwaps, error: fetchError } = await supabaseClient
         .from('banking_transactions')
         .select('*')
-        .eq('transaction_type', 'swap_to_wallet')
         .eq('status', 'pending')
+        .in('transaction_type', ['swap_to_wallet', 'swap'])
         .order('created_at', { ascending: true })
         .limit(10);
 
@@ -44,7 +45,14 @@ serve(async (req) => {
         throw new Error(`Failed to fetch swaps: ${fetchError.message}`);
       }
 
-      if (!pendingSwaps || pendingSwaps.length === 0) {
+      // Filter for swaps that need treasury processing
+      const swapsToProcess = (pendingSwaps || []).filter(swap => {
+        const metadata = swap.metadata as any;
+        return metadata?.swap_type === 'ngnb_bank_to_wallet' || 
+               metadata?.swap_type === 'bimcoin_bank_to_wallet';
+      });
+
+      if (!swapsToProcess || swapsToProcess.length === 0) {
         console.log('No pending swaps to process');
         return new Response(
           JSON.stringify({ success: true, processed: 0, message: 'No pending swaps' }),
@@ -52,7 +60,7 @@ serve(async (req) => {
         );
       }
 
-      console.log(`Found ${pendingSwaps.length} pending swaps`);
+      console.log(`Found ${swapsToProcess.length} pending swaps`);
 
       // Get treasury mnemonic
       const treasuryMnemonic = Deno.env.get('TREASURY_MNEMONIC');
@@ -65,15 +73,16 @@ serve(async (req) => {
 
       // Process each swap
       const results = [];
-      for (const swap of pendingSwaps) {
+      for (const swap of swapsToProcess) {
         try {
           console.log(`Processing swap ${swap.id} for user ${swap.user_id}`);
 
           const metadata = swap.metadata as any;
           const walletAddress = metadata?.wallet_address;
-          const amount = swap.ngnb_amount;
+          const swapType = metadata?.swap_type;
+          const amount = swapType === 'ngnb_bank_to_wallet' ? swap.ngnb_amount : metadata?.amount;
 
-          if (!walletAddress || !amount) {
+          if (!walletAddress || !amount || !swapType) {
             console.error(`Invalid swap data for ${swap.id}`);
             // Mark as failed
             await supabaseClient
@@ -86,12 +95,18 @@ serve(async (req) => {
             continue;
           }
 
-          // Send NGNB tokens from treasury to user wallet
-          const txResult = await sendNGNBFromTreasury({
+          // Determine which contract to use
+          const tokenContract = swapType === 'ngnb_bank_to_wallet' ? NGNB_CONTRACT : BIMCOIN_CONTRACT;
+          const tokenName = swapType === 'ngnb_bank_to_wallet' ? 'NGNB' : 'Bimcoin';
+
+          // Send tokens from treasury to user wallet
+          const txResult = await sendTokenFromTreasury({
             tonClient,
             treasuryMnemonic,
             recipientAddress: walletAddress,
             amount: amount.toString(),
+            tokenContract,
+            tokenName,
           });
 
           if (txResult.success) {
@@ -161,14 +176,16 @@ serve(async (req) => {
   }
 });
 
-async function sendNGNBFromTreasury(params: {
+async function sendTokenFromTreasury(params: {
   tonClient: TonClient;
   treasuryMnemonic: string;
   recipientAddress: string;
   amount: string;
+  tokenContract: string;
+  tokenName: string;
 }): Promise<{ success: boolean; error?: string; txHash?: string }> {
   try {
-    const { tonClient, treasuryMnemonic, recipientAddress, amount } = params;
+    const { tonClient, treasuryMnemonic, recipientAddress, amount, tokenContract, tokenName } = params;
 
     // Get key pair from mnemonic
     const keyPair = await mnemonicToPrivateKey(treasuryMnemonic.split(' '));
@@ -184,10 +201,10 @@ async function sendNGNBFromTreasury(params: {
     const walletAddress = wallet.address;
 
     console.log(`Treasury wallet: ${walletAddress.toString()}`);
-    console.log(`Sending ${amount} NGNB to ${recipientAddress}`);
+    console.log(`Sending ${amount} ${tokenName} to ${recipientAddress}`);
 
     // Get jetton wallet address for treasury
-    const jettonMasterAddr = Address.parse(NGNB_CONTRACT);
+    const jettonMasterAddr = Address.parse(tokenContract);
     const addressCell = beginCell()
       .storeAddress(walletAddress)
       .endCell();
@@ -245,7 +262,7 @@ async function sendNGNBFromTreasury(params: {
 
     return { success: false, error: 'Transaction timeout' };
   } catch (error) {
-    console.error('Error sending NGNB:', error);
+    console.error('Error sending tokens:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

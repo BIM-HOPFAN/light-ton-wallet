@@ -269,15 +269,21 @@ function BankContent() {
                 Withdraw
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
               <Button variant="secondary" className="w-full" onClick={() => navigate('/swap')}>
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Swap to Bimcoin
+                Swap NGNB to Bimcoin
               </Button>
-              <Button variant="secondary" className="w-full" onClick={() => navigate('/ngnb-swap')}>
-                <ArrowLeftRight className="h-4 w-4 mr-2" />
-                Bank ⇄ Wallet
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="secondary" className="w-full" onClick={() => navigate('/ngnb-swap')}>
+                  <ArrowLeftRight className="h-4 w-4 mr-2" />
+                  NGNB Bank ⇄ Wallet
+                </Button>
+                <Button variant="secondary" className="w-full" onClick={() => navigate('/bimcoin-swap')}>
+                  <ArrowLeftRight className="h-4 w-4 mr-2" />
+                  Bimcoin Bank ⇄ Wallet
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

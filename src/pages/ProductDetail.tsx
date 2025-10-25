@@ -80,7 +80,29 @@ function ProductDetailContent() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const totalBimcoin = (product.price_bimcoin * quantity).toFixed(8);
+      const totalBimcoin = parseFloat((product.price_bimcoin * quantity).toFixed(8));
+
+      // Check buyer's Bimcoin balance
+      const { data: balance, error: balanceError } = await supabase
+        .from('bimcoin_balances')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+
+      if (balanceError || !balance || parseFloat(balance.balance.toString()) < totalBimcoin) {
+        toast.error('Insufficient Bimcoin balance', {
+          description: 'Please swap more Bimcoin in the bank'
+        });
+        return;
+      }
+
+      // Deduct Bimcoin from buyer (locked in escrow)
+      const { error: deductError } = await supabase
+        .from('bimcoin_balances')
+        .update({ balance: parseFloat(balance.balance.toString()) - totalBimcoin })
+        .eq('user_id', user.id);
+
+      if (deductError) throw deductError;
 
       // Create order with escrow
       const { data: order, error } = await supabase
@@ -90,7 +112,7 @@ function ProductDetailContent() {
           seller_id: product.seller_id,
           product_id: product.id,
           quantity,
-          total_bimcoin: parseFloat(totalBimcoin),
+          total_bimcoin: totalBimcoin,
           delivery_address: deliveryAddress,
           buyer_notes: buyerNotes,
           status: 'escrow_locked'

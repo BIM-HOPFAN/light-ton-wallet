@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 interface Order {
   id: string;
   product_id: string;
+  seller_id: string;
   quantity: number;
   total_bimcoin: number;
   status: string;
@@ -83,6 +84,30 @@ function MyOrdersContent() {
     if (!selectedOrder) return;
 
     try {
+      // Get seller's current balance or create if doesn't exist
+      const { data: sellerBalance, error: sellerBalanceError } = await supabase
+        .from('bimcoin_balances')
+        .select('balance')
+        .eq('user_id', selectedOrder.seller_id)
+        .maybeSingle();
+
+      let newSellerBalance = selectedOrder.total_bimcoin;
+      
+      if (sellerBalance) {
+        newSellerBalance = parseFloat(sellerBalance.balance.toString()) + selectedOrder.total_bimcoin;
+      }
+
+      // Release escrow to seller
+      const { error: releaseError } = await supabase
+        .from('bimcoin_balances')
+        .upsert([{
+          user_id: selectedOrder.seller_id,
+          balance: newSellerBalance
+        }]);
+
+      if (releaseError) throw releaseError;
+
+      // Update order status
       const { error } = await supabase
         .from('orders')
         .update({
@@ -95,7 +120,7 @@ function MyOrdersContent() {
       if (error) throw error;
 
       toast.success('Delivery confirmed!', {
-        description: 'Escrow funds released to seller'
+        description: `${selectedOrder.total_bimcoin} BIM released to seller`
       });
       setShowConfirm(false);
       fetchOrders();

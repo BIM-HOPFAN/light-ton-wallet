@@ -26,6 +26,7 @@ import TransactionDetail from "./pages/TransactionDetail";
 import DAppBrowser from "./pages/DAppBrowser";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
+import SellerDashboard from "./pages/SellerDashboard";
 import Bank from "./pages/Bank";
 import MyOrders from "./pages/MyOrders";
 import Swap from "./pages/Swap";
@@ -77,6 +78,7 @@ const App = () => {
                 {/* Backend features - auth required (handled in components) */}
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
+                <Route path="/seller-dashboard" element={<SellerDashboard />} />
                 <Route path="/bank" element={<Bank />} />
                 <Route path="/my-orders" element={<MyOrders />} />
                 <Route path="/swap" element={<Swap />} />

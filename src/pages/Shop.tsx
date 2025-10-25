@@ -78,9 +78,14 @@ function ShopContent() {
               <ShoppingBag className="h-6 w-6 text-primary" />
               <h1 className="text-2xl font-bold">Bimcart</h1>
             </div>
-            <Button onClick={() => navigate('/dashboard')} variant="ghost">
-              Back to Wallet
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => navigate('/seller-dashboard')} variant="outline">
+                Sell Products
+              </Button>
+              <Button onClick={() => navigate('/dashboard')} variant="ghost">
+                Back to Wallet
+              </Button>
+            </div>
           </div>
 
           {/* Search */}

@@ -19,7 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 export default function Settings() {
   const navigate = useNavigate();
   const { wallet, setWallet, setIsLocked } = useWallet();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [showMnemonic, setShowMnemonic] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -81,13 +81,18 @@ export default function Settings() {
   };
   
   const handleBiometricToggle = async (enabled: boolean) => {
+    if (!user) {
+      toast.error('User not authenticated');
+      return;
+    }
+
     if (enabled && !biometricAvailable) {
       toast.error('Biometric authentication is not available on this device');
       return;
     }
     
     if (enabled) {
-      const success = await biometricService.register();
+      const success = await biometricService.register(user.id);
       if (success) {
         setBiometricEnabled(true);
         await updateSettings({ biometric_enabled: true });
@@ -96,6 +101,7 @@ export default function Settings() {
         toast.error('Failed to enable biometric authentication');
       }
     } else {
+      await biometricService.unregister();
       setBiometricEnabled(false);
       await updateSettings({ biometric_enabled: false });
       toast.success('Biometric authentication disabled');

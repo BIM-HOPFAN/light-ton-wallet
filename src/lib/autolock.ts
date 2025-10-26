@@ -1,8 +1,13 @@
-// Phase 2: Auto-lock timer functionality
+// Auto-lock timer with proper cleanup
 export class AutoLockService {
-  private lockTimer: NodeJS.Timeout | null = null;
+  private lockTimer: number | null = null;
   private lockTimeoutMinutes: number = 5;
   private onLockCallback: (() => void) | null = null;
+  private boundResetTimer: () => void;
+
+  constructor() {
+    this.boundResetTimer = this.resetTimer.bind(this);
+  }
 
   setLockTimeout(minutes: number) {
     this.lockTimeoutMinutes = minutes;
@@ -18,11 +23,11 @@ export class AutoLockService {
 
   resetTimer() {
     if (this.lockTimer) {
-      clearTimeout(this.lockTimer);
+      window.clearTimeout(this.lockTimer);
     }
 
     if (this.lockTimeoutMinutes > 0) {
-      this.lockTimer = setTimeout(() => {
+      this.lockTimer = window.setTimeout(() => {
         if (this.onLockCallback) {
           this.onLockCallback();
         }
@@ -32,22 +37,22 @@ export class AutoLockService {
 
   stopTimer() {
     if (this.lockTimer) {
-      clearTimeout(this.lockTimer);
+      window.clearTimeout(this.lockTimer);
       this.lockTimer = null;
     }
   }
 
   setupActivityListeners() {
-    const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+    const events: (keyof DocumentEventMap)[] = ['mousedown', 'keydown', 'touchstart', 'scroll'];
     events.forEach(event => {
-      document.addEventListener(event, () => this.resetTimer());
+      document.addEventListener(event, this.boundResetTimer, { passive: true });
     });
   }
 
   removeActivityListeners() {
-    const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+    const events: (keyof DocumentEventMap)[] = ['mousedown', 'keydown', 'touchstart', 'scroll'];
     events.forEach(event => {
-      document.removeEventListener(event, () => this.resetTimer());
+      document.removeEventListener(event, this.boundResetTimer);
     });
   }
 }

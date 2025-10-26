@@ -18,7 +18,11 @@ export default defineConfig(({ mode }) => ({
       protocolImports: true,
     }),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: mode === 'development' ? 'prompt' : 'autoUpdate',
+      devOptions: {
+        enabled: mode === 'development',
+        type: 'module',
+      },
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
         name: 'Light Wallet - TON Blockchain Wallet',
@@ -52,8 +56,10 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB limit
         cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true,
+        skipWaiting: mode === 'production',
+        clientsClaim: mode === 'production',
+        // More flexible caching strategy
+        navigateFallback: undefined, // Don't cache navigation requests aggressively
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -71,9 +77,23 @@ export default defineConfig(({ mode }) => ({
             handler: 'NetworkFirst',
             options: {
               cacheName: 'ton-api-cache',
+              networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 5 // 5 minutes
+              }
+            }
+          },
+          {
+            // Cache API responses with NetworkFirst
+            urlPattern: /\/api\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 2 // 2 minutes
               }
             }
           }

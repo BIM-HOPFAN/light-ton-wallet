@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Send as SendIcon, CheckCircle, XCircle, UserCircle } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useWallet } from '@/contexts/WalletContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { isValidAddress } from '@/lib/crypto';
 import { tonService } from '@/lib/ton';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ import { blockchainService } from '@/lib/blockchain';
 export default function Send() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const { wallet, balance } = useWallet();
   const [tokens, setTokens] = useState<Token[]>([]);
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
@@ -78,7 +80,7 @@ export default function Send() {
   const maxAmount = Math.max(0, parseFloat(currentBalance) - parseFloat(fee)).toFixed(2);
   
   const handleSend = async () => {
-    if (!wallet) return;
+    if (!wallet || !user) return;
     
     if (!addressValid) {
       toast.error('Invalid recipient address');
@@ -98,7 +100,7 @@ export default function Send() {
     setLoading(true);
     
     // Create pending transaction
-    const pendingTx = addTransaction({
+    const pendingTx = await addTransaction(user.id, wallet.address, {
       type: 'send',
       amount,
       token: selectedToken?.symbol || 'TON',
@@ -107,6 +109,12 @@ export default function Send() {
       status: 'pending',
       memo
     });
+    
+    if (!pendingTx) {
+      toast.error('Failed to create transaction record');
+      setLoading(false);
+      return;
+    }
     
     try {
       const result = await tonService.sendTON({
@@ -117,15 +125,15 @@ export default function Send() {
       });
       
       if (result.success) {
-        updateTransactionStatus(pendingTx.id, 'completed');
+        await updateTransactionStatus(pendingTx.id, 'completed');
         toast.success('Transaction sent successfully!');
         navigate('/dashboard');
       } else {
-        updateTransactionStatus(pendingTx.id, 'failed');
+        await updateTransactionStatus(pendingTx.id, 'failed');
         toast.error(result.error || 'Failed to send transaction');
       }
     } catch (error) {
-      updateTransactionStatus(pendingTx.id, 'failed');
+      await updateTransactionStatus(pendingTx.id, 'failed');
       toast.error('Failed to send transaction');
       console.error(error);
     } finally {

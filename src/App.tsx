@@ -32,6 +32,7 @@ import MyOrders from "./pages/MyOrders";
 import Swap from "./pages/Swap";
 import NGNBSwap from "./pages/NGNBSwap";
 import BimcoinSwap from "./pages/BimcoinSwap";
+import AdminKYC from "./pages/AdminKYC";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { hasWallet } from "./lib/storage";
@@ -84,6 +85,7 @@ const App = () => {
                 <Route path="/swap" element={<Swap />} />
                 <Route path="/ngnb-swap" element={<NGNBSwap />} />
                 <Route path="/bimcoin-swap" element={<BimcoinSwap />} />
+                <Route path="/admin/kyc" element={<AdminKYC />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

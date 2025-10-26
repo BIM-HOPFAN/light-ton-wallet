@@ -2,14 +2,19 @@ import { Card } from '@/components/ui/card';
 import { ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-react';
 import { getTransactions, Transaction } from '@/lib/transactions';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useWallet } from '@/contexts/WalletContext';
 
 export default function TransactionList() {
+  const { user } = useAuth();
+  const { wallet } = useWallet();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   
   useEffect(() => {
-    // Load transactions from storage
-    const loadTransactions = () => {
-      const txs = getTransactions();
+    // Load transactions from Supabase
+    const loadTransactions = async () => {
+      if (!user || !wallet) return;
+      const txs = await getTransactions(user.id, wallet.address);
       setTransactions(txs);
     };
     
@@ -18,7 +23,7 @@ export default function TransactionList() {
     // Refresh every 5 seconds to catch new transactions
     const interval = setInterval(loadTransactions, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user, wallet]);
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-6)}`;
   };

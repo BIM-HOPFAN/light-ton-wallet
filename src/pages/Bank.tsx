@@ -94,6 +94,8 @@ function BankContent() {
 
       const accountName = `Bimlight - ${user.email?.split('@')[0] || 'User'}`;
       
+      console.log('Creating virtual account for user:', user.id);
+      
       const { data, error } = await supabase.functions.invoke('monnify', {
         body: { 
           action: 'create_virtual_account',
@@ -101,15 +103,27 @@ function BankContent() {
         }
       });
 
-      if (error) throw error;
+      console.log('Monnify response:', { data, error });
 
-      if (data?.success && data?.data) {
+      if (error) {
+        console.error('Monnify invocation error:', error);
+        throw new Error(error.message || 'Failed to invoke Monnify function');
+      }
+
+      if (!data?.success) {
+        const errorMsg = data?.error || 'Unknown error from Monnify';
+        console.error('Monnify function error:', errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      if (data?.data) {
         setVirtualAccount(data.data);
         toast.success('Virtual account created successfully');
       }
     } catch (error) {
       console.error('Error creating virtual account:', error);
-      toast.error('Failed to create virtual account');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create virtual account';
+      toast.error(errorMessage);
     }
   };
 

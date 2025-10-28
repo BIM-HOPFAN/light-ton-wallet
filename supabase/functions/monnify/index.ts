@@ -72,6 +72,10 @@ serve(async (req) => {
 
     // Authenticate with Monnify
     const authString = btoa(`${MONNIFY_API_KEY}:${MONNIFY_SECRET_KEY}`);
+    console.log('Attempting Monnify authentication...');
+    console.log('Base URL:', MONNIFY_BASE_URL);
+    console.log('API Key (first 8 chars):', MONNIFY_API_KEY.substring(0, 8) + '...');
+    
     const authResponse = await fetch(`${MONNIFY_BASE_URL}/api/v1/auth/login`, {
       method: 'POST',
       headers: {
@@ -80,7 +84,16 @@ serve(async (req) => {
       },
     });
 
-    const authData: MonnifyAuthResponse = await authResponse.json();
+    console.log('Auth response status:', authResponse.status);
+    const authResponseText = await authResponse.text();
+    console.log('Auth response body:', authResponseText);
+    
+    let authData: MonnifyAuthResponse;
+    try {
+      authData = JSON.parse(authResponseText);
+    } catch (e) {
+      throw new Error(`Failed to parse Monnify auth response: ${authResponseText}`);
+    }
     
     if (!authData.requestSuccessful) {
       throw new Error(`Monnify authentication failed: ${authData.responseMessage}`);

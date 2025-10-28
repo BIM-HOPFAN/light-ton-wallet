@@ -129,6 +129,8 @@ serve(async (req) => {
         getAllAvailableBanks: false,
       };
 
+      console.log('Creating virtual account with request:', JSON.stringify(virtualAccountRequest, null, 2));
+      
       const createAccountResponse = await fetch(
         `${MONNIFY_BASE_URL}/api/v2/bank-transfer/reserved-accounts`,
         {
@@ -141,9 +143,19 @@ serve(async (req) => {
         }
       );
 
-      const accountData = await createAccountResponse.json();
+      console.log('Create account response status:', createAccountResponse.status);
+      const accountResponseText = await createAccountResponse.text();
+      console.log('Create account response body:', accountResponseText);
+
+      let accountData;
+      try {
+        accountData = JSON.parse(accountResponseText);
+      } catch (e) {
+        throw new Error(`Failed to parse Monnify create account response: ${accountResponseText}`);
+      }
 
       if (!accountData.requestSuccessful) {
+        console.error('Virtual account creation failed:', accountData);
         throw new Error(`Failed to create virtual account: ${accountData.responseMessage}`);
       }
 

@@ -1,8 +1,8 @@
 import { TonClient, WalletContractV4, internal, Address, beginCell } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 
-// TON Client (testnet for demo - switch to mainnet for production)
-const ENDPOINT = 'https://testnet.toncenter.com/api/v2/jsonRPC';
+// TON Client - Mainnet
+const ENDPOINT = 'https://toncenter.com/api/v2/jsonRPC';
 
 export class TONService {
   private client: TonClient;

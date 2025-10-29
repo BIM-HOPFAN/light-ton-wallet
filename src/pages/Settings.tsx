@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet, Link2, Fingerprint, C
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/contexts/WalletContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import { deleteWallet, verifyPIN } from '@/lib/storage';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -194,6 +195,9 @@ export default function Settings() {
         <h1 className="text-3xl font-bold mb-6">Settings</h1>
         
         <div className="space-y-4">
+          {/* Notifications */}
+          <NotificationSettings />
+
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

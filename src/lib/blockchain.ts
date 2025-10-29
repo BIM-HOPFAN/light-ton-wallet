@@ -6,14 +6,15 @@ export type Network = 'mainnet' | 'testnet';
 class BlockchainService {
   private mainnetClient: TonClient;
   private testnetClient: TonClient;
-  private currentNetwork: Network = 'mainnet';
+  private currentNetwork: Network = 'mainnet'; // Production default
 
   constructor() {
-    // Initialize both mainnet and testnet clients
+    // Initialize mainnet (production)
     this.mainnetClient = new TonClient({
       endpoint: 'https://toncenter.com/api/v2/jsonRPC',
     });
     
+    // Initialize testnet (development)
     this.testnetClient = new TonClient({
       endpoint: 'https://testnet.toncenter.com/api/v2/jsonRPC',
     });

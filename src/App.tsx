@@ -35,6 +35,11 @@ import BimcoinSwap from "./pages/BimcoinSwap";
 import AdminKYC from "./pages/AdminKYC";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import SocialRecovery from "./pages/SocialRecovery";
+import Staking from "./pages/Staking";
+import MultiSig from "./pages/MultiSig";
+import ScheduledTransactions from "./pages/ScheduledTransactions";
+import FiatOnRamp from "./pages/FiatOnRamp";
 import { hasWallet } from "./lib/storage";
 
 const queryClient = new QueryClient();
@@ -86,6 +91,13 @@ const App = () => {
                 <Route path="/ngnb-swap" element={<NGNBSwap />} />
                 <Route path="/bimcoin-swap" element={<BimcoinSwap />} />
                 <Route path="/admin/kyc" element={<AdminKYC />} />
+                
+                {/* New Features */}
+                <Route path="/social-recovery" element={<SocialRecovery />} />
+                <Route path="/staking" element={<Staking />} />
+                <Route path="/multisig" element={<MultiSig />} />
+                <Route path="/scheduled" element={<ScheduledTransactions />} />
+                <Route path="/buy-crypto" element={<FiatOnRamp />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

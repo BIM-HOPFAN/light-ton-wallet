@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet, Link2, Fingerprint, Clock, LogOut } from 'lucide-react';
+import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet, Link2, Fingerprint, Clock, LogOut, TrendingUp, Users, Calendar, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/contexts/WalletContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -281,6 +281,106 @@ export default function Settings() {
                 onClick={() => navigate('/connected-apps')}
               >
                 View
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <Shield className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Social Recovery</h3>
+                  <p className="text-sm text-muted-foreground">Add trusted guardians for wallet recovery</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/social-recovery')}
+              >
+                Manage
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Staking</h3>
+                  <p className="text-sm text-muted-foreground">Earn rewards by staking tokens</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/staking')}
+              >
+                Stake
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Multi-Sig Wallets</h3>
+                  <p className="text-sm text-muted-foreground">Create wallets requiring multiple approvals</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/multisig')}
+              >
+                Manage
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <Calendar className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Scheduled Transactions</h3>
+                  <p className="text-sm text-muted-foreground">Set up automatic or recurring payments</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/scheduled')}
+              >
+                Schedule
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <DollarSign className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Buy Crypto</h3>
+                  <p className="text-sm text-muted-foreground">Purchase crypto with fiat currency</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/buy-crypto')}
+              >
+                Buy
               </Button>
             </div>
           </Card>

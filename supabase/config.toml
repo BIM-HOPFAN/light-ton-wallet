@@ -7,4 +7,4 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.ngnb-treasury]
-verify_jwt = false
+verify_jwt = true

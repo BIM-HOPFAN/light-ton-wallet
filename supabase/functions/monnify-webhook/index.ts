@@ -6,6 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, monnify-signature',
 };
 
+// In-memory cache for processed transaction references (5-minute expiry)
+const processedTransactions = new Map<string, number>();
+const TRANSACTION_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+const WEBHOOK_MAX_AGE_MS = 5 * 60 * 1000; // Reject webhooks older than 5 minutes
+
+// Cleanup expired transactions from cache
+function cleanupExpiredTransactions() {
+  const now = Date.now();
+  for (const [key, timestamp] of processedTransactions.entries()) {
+    if (now - timestamp > TRANSACTION_EXPIRY_MS) {
+      processedTransactions.delete(key);
+    }
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -23,6 +38,7 @@ serve(async (req) => {
 
     // Verify webhook signature
     if (!signature || !SECRET_KEY) {
+      console.error('Missing signature or secret key');
       throw new Error('Missing signature or secret key');
     }
 
@@ -48,7 +64,21 @@ serve(async (req) => {
     }
 
     const webhookData = JSON.parse(body);
-    console.log('Webhook received:', webhookData);
+    console.log('Webhook received:', { 
+      eventType: webhookData.eventType,
+      timestamp: new Date().toISOString(),
+      reference: webhookData.eventData?.transactionReference 
+    });
+
+    // Validate webhook timestamp (if provided)
+    if (webhookData.timestamp) {
+      const webhookTime = new Date(webhookData.timestamp).getTime();
+      const now = Date.now();
+      if (now - webhookTime > WEBHOOK_MAX_AGE_MS) {
+        console.error('Webhook too old:', { webhookTime, now, age: now - webhookTime });
+        throw new Error('Webhook request too old - possible replay attack');
+      }
+    }
 
     const { eventType, eventData } = webhookData;
 
@@ -61,6 +91,39 @@ serve(async (req) => {
         paymentReference,
         customerEmail,
       } = eventData;
+
+      // Cleanup old transaction records periodically
+      cleanupExpiredTransactions();
+
+      // Check for duplicate transaction (replay attack prevention)
+      if (processedTransactions.has(transactionReference)) {
+        console.warn('Duplicate transaction detected:', transactionReference);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Transaction already processed' }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409 
+          }
+        );
+      }
+
+      // Check database for existing transaction reference
+      const { data: existingTx } = await supabaseClient
+        .from('banking_transactions')
+        .select('id')
+        .eq('reference', transactionReference)
+        .maybeSingle();
+
+      if (existingTx) {
+        console.warn('Transaction reference already exists in database:', transactionReference);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Transaction already processed' }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409 
+          }
+        );
+      }
 
       // Find the user by account reference
       const { data: virtualAccount } = await supabaseClient
@@ -119,10 +182,17 @@ serve(async (req) => {
             payment_reference: paymentReference,
             customer_email: customerEmail,
             webhook_data: eventData,
+            processed_at: new Date().toISOString()
           },
         });
 
-      console.log(`Successfully processed deposit of ${amountPaid} for user ${userId}`);
+      // Mark transaction as processed in memory cache
+      processedTransactions.set(transactionReference, Date.now());
+
+      console.log(`Successfully processed deposit of ${amountPaid} for user ${userId}`, {
+        transactionReference,
+        timestamp: new Date().toISOString()
+      });
     }
 
     return new Response(
@@ -131,7 +201,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Webhook error:', error);
+    console.error('Webhook error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),

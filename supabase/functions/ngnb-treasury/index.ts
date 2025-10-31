@@ -8,6 +8,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Security limits
+const MAX_TRANSACTION_AMOUNT = 1000; // Maximum 1000 tokens per transaction
+const MAX_HOURLY_VOLUME = 5000; // Maximum 5000 tokens per hour
+const RATE_LIMIT_WINDOW_MS = 3600000; // 1 hour in milliseconds
+
+// In-memory rate limiting (for production, use Redis or database)
+const transactionLog: { timestamp: number; amount: number; userId: string }[] = [];
+
 const NGNB_CONTRACT = 'EQBqvuMEkR9XHTE0qRVzIJ7gVSxVvB93757VV3nNEhKwb06q';
 const BIMCOIN_CONTRACT = 'UQCv2zOQoWzM8HI5jnNs8KJQngGNHfwnJ4n7DH8gT3wAt_Yk';
 const TON_ENDPOINT = 'https://toncenter.com/api/v2/jsonRPC'; // Use mainnet
@@ -26,6 +34,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Clean up old transaction logs
+    const now = Date.now();
+    const cutoff = now - RATE_LIMIT_WINDOW_MS;
+    while (transactionLog.length > 0 && transactionLog[0].timestamp < cutoff) {
+      transactionLog.shift();
+    }
 
     const { action } = await req.json() as ProcessSwapRequest;
 
@@ -95,6 +110,35 @@ serve(async (req) => {
             continue;
           }
 
+          // Security: Validate transaction amount
+          const amountNum = parseFloat(amount.toString());
+          if (amountNum > MAX_TRANSACTION_AMOUNT) {
+            console.error(`Transaction amount ${amountNum} exceeds limit for swap ${swap.id}`);
+            await supabaseClient
+              .from('banking_transactions')
+              .update({ 
+                status: 'failed',
+                metadata: { ...metadata, error: `Amount exceeds limit of ${MAX_TRANSACTION_AMOUNT}, requires manual approval` }
+              })
+              .eq('id', swap.id);
+            results.push({ id: swap.id, success: false, error: 'Amount exceeds limit' });
+            continue;
+          }
+
+          // Security: Check hourly volume
+          const hourlyVolume = transactionLog.reduce((sum, tx) => sum + tx.amount, 0);
+          if (hourlyVolume + amountNum > MAX_HOURLY_VOLUME) {
+            console.error(`Hourly volume limit reached for swap ${swap.id}`);
+            await supabaseClient
+              .from('banking_transactions')
+              .update({ 
+                metadata: { ...metadata, error: `Hourly volume limit reached (${MAX_HOURLY_VOLUME}), will retry later` }
+              })
+              .eq('id', swap.id);
+            results.push({ id: swap.id, success: false, error: 'Hourly volume limit reached' });
+            continue;
+          }
+
           // Determine which contract to use
           const tokenContract = swapType === 'ngnb_bank_to_wallet' ? NGNB_CONTRACT : BIMCOIN_CONTRACT;
           const tokenName = swapType === 'ngnb_bank_to_wallet' ? 'NGNB' : 'Bimcoin';
@@ -110,6 +154,13 @@ serve(async (req) => {
           });
 
           if (txResult.success) {
+            // Log transaction for rate limiting
+            transactionLog.push({
+              timestamp: Date.now(),
+              amount: amountNum,
+              userId: swap.user_id
+            });
+
             // Update transaction as completed
             await supabaseClient
               .from('banking_transactions')
@@ -119,12 +170,13 @@ serve(async (req) => {
                 metadata: { 
                   ...metadata, 
                   tx_hash: txResult.txHash,
-                  processed_at: new Date().toISOString()
+                  processed_at: new Date().toISOString(),
+                  amount_processed: amountNum
                 }
               })
               .eq('id', swap.id);
 
-            console.log(`Successfully processed swap ${swap.id}, tx: ${txResult.txHash}`);
+            console.log(`Successfully processed swap ${swap.id}, tx: ${txResult.txHash}, amount: ${amountNum}`);
             results.push({ id: swap.id, success: true, txHash: txResult.txHash });
           } else {
             // Update as failed

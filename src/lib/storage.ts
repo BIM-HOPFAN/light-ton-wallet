@@ -106,26 +106,87 @@ export function deleteWallet(): void {
   deleteAllWallets();
 }
 
-// Store PIN hash (simple hash for demo - use stronger KDF in production)
+// Store PIN hash using PBKDF2 with salt
 export async function storePINHash(pin: string): Promise<void> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(pin);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const pinData = encoder.encode(pin);
+  
+  // Generate random salt
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  
+  // Derive key using PBKDF2
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    pinData,
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+  
+  const hashBuffer = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    256
+  );
+  
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  localStorage.setItem(PIN_KEY, hashHex);
+  const saltArray = Array.from(salt);
+  
+  // Store both hash and salt
+  const stored = {
+    hash: hashArray.map(b => b.toString(16).padStart(2, '0')).join(''),
+    salt: saltArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  };
+  
+  localStorage.setItem(PIN_KEY, JSON.stringify(stored));
 }
 
-// Verify PIN
+// Verify PIN using PBKDF2 with stored salt
 export async function verifyPIN(pin: string): Promise<boolean> {
-  const storedHash = localStorage.getItem(PIN_KEY);
-  if (!storedHash) return false;
+  const storedData = localStorage.getItem(PIN_KEY);
+  if (!storedData) return false;
   
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pin);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  return hashHex === storedHash;
+  try {
+    const stored = JSON.parse(storedData);
+    const encoder = new TextEncoder();
+    const pinData = encoder.encode(pin);
+    
+    // Convert hex salt back to Uint8Array
+    const salt = new Uint8Array(
+      stored.salt.match(/.{1,2}/g).map((byte: string) => parseInt(byte, 16))
+    );
+    
+    // Derive key using same parameters
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      pinData,
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    );
+    
+    const hashBuffer = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      256
+    );
+    
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    return hashHex === stored.hash;
+  } catch (error) {
+    console.error('PIN verification error:', error);
+    return false;
+  }
 }

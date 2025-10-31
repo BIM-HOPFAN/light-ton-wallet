@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.ngnb-treasury]
 verify_jwt = true
+
+[functions.ngnb-swap]
+verify_jwt = true
+
+[functions.bimcoin-swap]
+verify_jwt = true

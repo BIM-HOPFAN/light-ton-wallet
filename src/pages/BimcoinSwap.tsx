@@ -82,33 +82,18 @@ function BimcoinSwapContent() {
     // Bank to Wallet flow
     setIsProcessing(true);
     try {
-      // Deduct from bank balance
-      const newBankBalance = parseFloat(bankBalance) - swapAmount;
-      const { error: balanceError } = await supabase
-        .from('bimcoin_balances')
-        .update({ balance: newBankBalance })
-        .eq('user_id', session.user.id);
-
-      if (balanceError) throw balanceError;
-
-      // Create pending transaction record
       const activeWallet = getActiveWallet();
-      const { error: txError } = await supabase
-        .from('banking_transactions')
-        .insert({
-          user_id: session.user.id,
-          transaction_type: 'swap',
+      
+      // Call edge function for atomic bank-to-wallet swap
+      const { data, error } = await supabase.functions.invoke('bimcoin-swap', {
+        body: {
+          direction: 'bank-to-wallet',
           amount: swapAmount,
-          currency: 'BIMCOIN',
-          status: 'pending',
-          metadata: {
-            swap_type: 'bimcoin_bank_to_wallet',
-            wallet_address: activeWallet?.address,
-            amount: swapAmount
-          }
-        });
+          walletAddress: activeWallet?.address
+        }
+      });
 
-      if (txError) throw txError;
+      if (error) throw error;
 
       toast.success('Swap initiated! Bimcoin will be sent to your wallet shortly.');
       setAmount('');
@@ -153,44 +138,17 @@ function BimcoinSwapContent() {
         throw new Error(result.error || 'Transaction failed');
       }
 
-      // Credit internal bank balance
-      const { data: existingBalance } = await supabase
-        .from('bimcoin_balances')
-        .select('balance')
-        .eq('user_id', session!.user.id)
-        .maybeSingle();
-
-      const newBalance = existingBalance
-        ? parseFloat(existingBalance.balance.toString()) + parseFloat(amount)
-        : parseFloat(amount);
-
-      if (existingBalance) {
-        const { error } = await supabase
-          .from('bimcoin_balances')
-          .update({ balance: newBalance })
-          .eq('user_id', session!.user.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('bimcoin_balances')
-          .insert([{ user_id: session!.user.id, balance: newBalance }]);
-        if (error) throw error;
-      }
-
-      // Record transaction
-      await supabase.from('banking_transactions').insert({
-        user_id: session!.user.id,
-        transaction_type: 'swap',
-        amount: parseFloat(amount),
-        currency: 'BIMCOIN',
-        status: 'completed',
-        reference: result.txHash,
-        metadata: {
-          swap_type: 'bimcoin_wallet_to_bank',
-          tx_hash: result.txHash,
-          amount: parseFloat(amount)
+      // Call edge function for atomic wallet-to-bank swap
+      const { data, error: swapError } = await supabase.functions.invoke('bimcoin-swap', {
+        body: {
+          direction: 'wallet-to-bank',
+          amount: parseFloat(amount),
+          walletAddress: activeWallet.address,
+          txHash: result.txHash
         }
       });
+
+      if (swapError) throw swapError;
 
       toast.success('Swap completed successfully!');
       setAmount('');

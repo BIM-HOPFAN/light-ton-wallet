@@ -98,30 +98,16 @@ function NGNBSwapContent() {
       if (!user) throw new Error('User not authenticated');
 
       if (swapDirection === 'bank-to-wallet') {
-        // Swap internal NGNB to wallet NGNB
-        // 1. Deduct from internal balance
-        const newBalance = parseFloat(bankBalance) - swapAmount;
-        const { error: updateError } = await supabase
-          .from('ngnb_balances')
-          .update({ balance: newBalance })
-          .eq('user_id', user.id);
-
-        if (updateError) throw updateError;
-
-        // 2. Record transaction
-        await supabase.from('banking_transactions').insert([{
-          user_id: user.id,
-          transaction_type: 'swap_to_wallet',
-          amount: swapAmount,
-          ngnb_amount: swapAmount,
-          currency: 'NGNB',
-          status: 'pending',
-          metadata: {
-            wallet_address: wallet.address,
-            treasury_address: TREASURY_ADDRESS,
-            direction: 'bank_to_wallet'
+        // Call edge function for atomic bank-to-wallet swap
+        const { data, error } = await supabase.functions.invoke('ngnb-swap', {
+          body: {
+            direction: 'bank-to-wallet',
+            amount: swapAmount,
+            walletAddress: wallet.address
           }
-        }]);
+        });
+
+        if (error) throw error;
 
         toast({
           title: 'Swap Initiated',
@@ -175,50 +161,17 @@ function NGNBSwapContent() {
           throw new Error(result.error || 'Token transfer failed');
         }
 
-        // Credit internal NGNB balance
-        const newBalance = parseFloat(bankBalance) + swapAmount;
-        const { error: updateError } = await supabase
-          .from('ngnb_balances')
-          .update({ balance: newBalance })
-          .eq('user_id', user.id);
-
-        if (updateError) {
-          // If balance update fails, we should handle this carefully
-          // Transaction already sent, so we record it for manual reconciliation
-          await supabase.from('banking_transactions').insert([{
-            user_id: user.id,
-            transaction_type: 'swap_to_bank',
+        // Call edge function for atomic wallet-to-bank swap
+        const { data, error: swapError } = await supabase.functions.invoke('ngnb-swap', {
+          body: {
+            direction: 'wallet-to-bank',
             amount: swapAmount,
-            ngnb_amount: swapAmount,
-            currency: 'NGNB',
-            status: 'pending',
-            reference: result.txHash,
-            metadata: {
-              wallet_address: wallet.address,
-              treasury_address: TREASURY_ADDRESS,
-              direction: 'wallet_to_bank',
-              error: 'balance_update_failed'
-            }
-          }]);
-          
-          throw new Error('Balance update failed. Transaction recorded for review.');
-        }
-
-        // Record successful transaction
-        await supabase.from('banking_transactions').insert([{
-          user_id: user.id,
-          transaction_type: 'swap_to_bank',
-          amount: swapAmount,
-          ngnb_amount: swapAmount,
-          currency: 'NGNB',
-          status: 'completed',
-          reference: result.txHash,
-          metadata: {
-            wallet_address: wallet.address,
-            treasury_address: TREASURY_ADDRESS,
-            direction: 'wallet_to_bank'
+            walletAddress: wallet.address,
+            txHash: result.txHash
           }
-        }]);
+        });
+
+        if (swapError) throw swapError;
 
         toast({
           title: 'Swap Successful',

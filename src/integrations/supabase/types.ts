@@ -540,6 +540,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      atomic_credit_bimcoin_balance: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: boolean
+      }
+      atomic_credit_ngnb_balance: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: boolean
+      }
+      atomic_deduct_bimcoin_balance: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: boolean
+      }
+      atomic_deduct_ngnb_balance: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

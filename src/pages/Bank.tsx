@@ -288,14 +288,14 @@ function BankContent() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Swap NGNB to Bimcoin
               </Button>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="secondary" className="w-full" onClick={() => navigate('/ngnb-swap')}>
-                  <ArrowLeftRight className="h-4 w-4 mr-2" />
-                  NGNB Bank ⇄ Wallet
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button variant="secondary" className="w-full text-xs sm:text-sm" onClick={() => navigate('/ngnb-swap')}>
+                  <ArrowLeftRight className="h-4 w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                  <span className="truncate">NGNB Bank ⇄ Wallet</span>
                 </Button>
-                <Button variant="secondary" className="w-full" onClick={() => navigate('/bimcoin-swap')}>
-                  <ArrowLeftRight className="h-4 w-4 mr-2" />
-                  Bimcoin Bank ⇄ Wallet
+                <Button variant="secondary" className="w-full text-xs sm:text-sm" onClick={() => navigate('/bimcoin-swap')}>
+                  <ArrowLeftRight className="h-4 w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                  <span className="truncate">Bimcoin Bank ⇄ Wallet</span>
                 </Button>
               </div>
             </div>

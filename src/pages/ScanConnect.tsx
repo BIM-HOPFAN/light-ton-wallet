@@ -15,9 +15,12 @@ export default function ScanConnect() {
   const [isConnecting, setIsConnecting] = useState(false);
 
   const handleScan = async (data: any) => {
-    if (data?.text) {
-      setShowScanner(false);
-      await handleConnect(data.text);
+    if (data?.text || data) {
+      const qrText = typeof data === 'string' ? data : data?.text;
+      if (qrText) {
+        setShowScanner(false);
+        await handleConnect(qrText);
+      }
     }
   };
 

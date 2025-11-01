@@ -59,8 +59,9 @@ export class BiometricService {
         throw new Error('Failed to create credential');
       }
 
-      // Store credential ID
-      localStorage.setItem('biometric_credential_id', credential.id);
+      // Store credential ID as base64
+      const credentialIdBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+      localStorage.setItem('biometric_credential_id', credentialIdBase64);
       return true;
     } catch (error) {
       console.error('Biometric registration failed:', error);

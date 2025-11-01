@@ -9,7 +9,8 @@ import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Settings, LogOut, ScanLine, Coins, ArrowRight, Image, Globe, UserCircle, ShoppingBag, Building2, BarChart3 } from 'lucide-react';
+import { Settings, LogOut, ScanLine, Coins, ArrowRight, Image, Globe, UserCircle, ShoppingBag, Building2, BarChart3, Bell } from 'lucide-react';
+import { TransactionNotificationBadge } from '@/components/TransactionNotificationBadge';
 import { tonService } from '@/lib/ton';
 import { blockchainService } from '@/lib/blockchain';
 import { autoLockService } from '@/lib/autolock';
@@ -97,6 +98,7 @@ export default function Dashboard() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <img src={bimlightLogo} alt="Bimlight Bank" className="h-8 w-auto" />
           <div className="flex gap-2">
+            <TransactionNotificationBadge />
             <Button 
               variant="ghost" 
               size="icon"

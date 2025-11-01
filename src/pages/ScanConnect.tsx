@@ -15,9 +15,9 @@ export default function ScanConnect() {
   const [isConnecting, setIsConnecting] = useState(false);
 
   const handleScan = async (data: any) => {
-    if (data?.text || data) {
-      const qrText = typeof data === 'string' ? data : data?.text;
-      if (qrText) {
+    if (data) {
+      const qrText = data?.text || data;
+      if (qrText && typeof qrText === 'string') {
         setShowScanner(false);
         await handleConnect(qrText);
       }
@@ -26,7 +26,8 @@ export default function ScanConnect() {
 
   const handleError = (err: any) => {
     console.error('QR Scanner error:', err);
-    toast.error('Camera access denied or not available');
+    toast.error('Unable to access camera. Please check permissions.');
+    setShowScanner(false);
   };
 
   const handleConnect = async (uri: string) => {
@@ -93,15 +94,21 @@ export default function ScanConnect() {
               </Button>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-lg overflow-hidden border">
+                <div className="rounded-lg overflow-hidden border bg-black">
                   <QrScanner
                     delay={300}
                     onError={handleError}
                     onScan={handleScan}
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', height: '400px' }}
                     constraints={{
-                      video: { facingMode: 'environment' }
+                      audio: false,
+                      video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                      }
                     }}
+                    legacyMode={false}
                   />
                 </div>
                 <Button

@@ -30,8 +30,21 @@ export default function ScanConnect() {
       const scanner = new Html5Qrcode('qr-reader');
       scannerRef.current = scanner;
 
+      const devices = await Html5Qrcode.getCameras();
+      if (!devices || devices.length === 0) {
+        throw new Error('No cameras found');
+      }
+
+      // Try to find back camera, otherwise use first available
+      const backCamera = devices.find(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('rear') ||
+        device.label.toLowerCase().includes('environment')
+      );
+      const cameraId = backCamera?.id || devices[0].id;
+
       await scanner.start(
-        { facingMode: 'environment' },
+        cameraId,
         {
           fps: 10,
           qrbox: { width: 250, height: 250 },
@@ -52,7 +65,8 @@ export default function ScanConnect() {
       isScanningRef.current = true;
     } catch (err) {
       console.error('Failed to start scanner:', err);
-      toast.error('Unable to access camera. Please check permissions.');
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Camera error: ${errorMsg}. Please allow camera access in your browser settings.`);
       setShowScanner(false);
     }
   };
@@ -76,7 +90,7 @@ export default function ScanConnect() {
   }, [showScanner]);
 
   const handleConnect = async (uri: string) => {
-    if (!uri.startsWith('wc:')) {
+    if (!uri || (!uri.startsWith('wc:') && !uri.includes('wc?uri='))) {
       toast.error('Invalid WalletConnect URI');
       return;
     }

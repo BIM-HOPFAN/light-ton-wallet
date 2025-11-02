@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, ScanLine, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
-import QrScanner from 'react-qr-scanner';
+import { Html5Qrcode } from 'html5-qrcode';
 import { connectWithUri } from '@/lib/walletconnect';
 
 export default function ScanConnect() {
@@ -13,22 +13,67 @@ export default function ScanConnect() {
   const [showScanner, setShowScanner] = useState(false);
   const [manualUri, setManualUri] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isScanningRef = useRef(false);
 
-  const handleScan = async (data: any) => {
-    if (data) {
-      const qrText = data?.text || data;
-      if (qrText && typeof qrText === 'string') {
-        setShowScanner(false);
-        await handleConnect(qrText);
+  useEffect(() => {
+    return () => {
+      // Cleanup scanner on unmount
+      if (scannerRef.current && isScanningRef.current) {
+        scannerRef.current.stop().catch(console.error);
       }
+    };
+  }, []);
+
+  const startScanning = async () => {
+    try {
+      const scanner = new Html5Qrcode('qr-reader');
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        async (decodedText) => {
+          // Success callback
+          isScanningRef.current = false;
+          await scanner.stop();
+          setShowScanner(false);
+          await handleConnect(decodedText);
+        },
+        (errorMessage) => {
+          // Error callback (ongoing scanning errors, can be ignored)
+          console.debug('QR scan error:', errorMessage);
+        }
+      );
+      
+      isScanningRef.current = true;
+    } catch (err) {
+      console.error('Failed to start scanner:', err);
+      toast.error('Unable to access camera. Please check permissions.');
+      setShowScanner(false);
     }
   };
 
-  const handleError = (err: any) => {
-    console.error('QR Scanner error:', err);
-    toast.error('Unable to access camera. Please check permissions.');
+  const stopScanning = async () => {
+    if (scannerRef.current && isScanningRef.current) {
+      try {
+        await scannerRef.current.stop();
+        isScanningRef.current = false;
+      } catch (err) {
+        console.error('Error stopping scanner:', err);
+      }
+    }
     setShowScanner(false);
   };
+
+  useEffect(() => {
+    if (showScanner) {
+      startScanning();
+    }
+  }, [showScanner]);
 
   const handleConnect = async (uri: string) => {
     if (!uri.startsWith('wc:')) {
@@ -94,26 +139,16 @@ export default function ScanConnect() {
               </Button>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-lg overflow-hidden border bg-black">
-                  <QrScanner
-                    delay={300}
-                    onError={handleError}
-                    onScan={handleScan}
-                    style={{ width: '100%', height: '400px' }}
-                    constraints={{
-                      audio: false,
-                      video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                      }
-                    }}
-                    legacyMode={false}
+                <div className="rounded-lg overflow-hidden border bg-background">
+                  <div 
+                    id="qr-reader" 
+                    className="w-full"
+                    style={{ minHeight: '400px' }}
                   />
                 </div>
                 <Button
                   variant="outline"
-                  onClick={() => setShowScanner(false)}
+                  onClick={stopScanning}
                   className="w-full"
                 >
                   Cancel

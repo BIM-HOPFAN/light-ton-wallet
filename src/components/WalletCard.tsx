@@ -22,9 +22,40 @@ export default function WalletCard() {
   const [fiatBalance, setFiatBalance] = useState('0.00');
 
   useEffect(() => {
-    const allTokens = getTokens();
-    setTokens(allTokens);
-  }, []);
+    const loadTokensWithBalances = async () => {
+      const allTokens = getTokens();
+      
+      // Fetch balances for tokens with contract addresses
+      if (wallet?.address) {
+        const tokensWithBalances = await Promise.all(
+          allTokens.map(async (token) => {
+            if (token.contractAddress && token.network === 'TON') {
+              try {
+                const balance = await blockchainService.getTokenBalance(
+                  wallet.address,
+                  token.contractAddress
+                );
+                return { ...token, balance };
+              } catch (error) {
+                console.error(`Failed to fetch balance for ${token.symbol}:`, error);
+                return { ...token, balance: '0.00' };
+              }
+            }
+            return token;
+          })
+        );
+        setTokens(tokensWithBalances);
+      } else {
+        setTokens(allTokens);
+      }
+    };
+    
+    loadTokensWithBalances();
+    
+    // Refresh balances every 15 seconds
+    const interval = setInterval(loadTokensWithBalances, 15000);
+    return () => clearInterval(interval);
+  }, [wallet?.address]);
 
   useEffect(() => {
     const convertBalance = async () => {
@@ -117,8 +148,12 @@ export default function WalletCard() {
               onClick={() => navigate('/send', { state: { selectedToken: token } })}
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-lg">
-                  {token.icon || '🪙'}
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-lg overflow-hidden">
+                  {typeof token.icon === 'string' && token.icon.endsWith('.svg') ? (
+                    <img src={token.icon} alt={token.name} className="w-6 h-6 object-contain" />
+                  ) : (
+                    <span>{token.icon || '🪙'}</span>
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">

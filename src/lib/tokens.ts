@@ -1,3 +1,5 @@
+import bimcoinLogo from '@/assets/bimcoin-logo.svg';
+
 export type Network = 'TON' | 'Ethereum' | 'Binance Smart Chain' | 'Polygon' | 'Solana' | 'Bitcoin';
 
 export interface Token {
@@ -41,7 +43,7 @@ export const DEFAULT_TOKENS: Token[] = [
     decimals: 9,
     network: 'TON',
     contractAddress: 'EQB0ePLIUc02kwXNA7ulK-vlotIxIqrEfD0tBC53Bmz6DCRO',
-    icon: '🪙',
+    icon: bimcoinLogo,
   },
   {
     id: 'ngnb',

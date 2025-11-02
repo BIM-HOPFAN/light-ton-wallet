@@ -114,8 +114,12 @@ export default function Tokens() {
           {tokens.map((token) => (
             <Card key={token.id} className="p-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
-                  {token.icon || '🪙'}
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl overflow-hidden">
+                  {typeof token.icon === 'string' && token.icon.endsWith('.svg') ? (
+                    <img src={token.icon} alt={token.name} className="w-10 h-10 object-contain" />
+                  ) : (
+                    <span>{token.icon || '🪙'}</span>
+                  )}
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold flex items-center gap-2">

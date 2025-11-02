@@ -117,15 +117,30 @@ export default function Send() {
     }
     
     try {
-      const result = await tonService.sendTON({
-        mnemonic: wallet.mnemonic,
-        recipientAddress: recipient,
-        amount,
-        memo
-      });
+      let result;
+      
+      // Handle different token types
+      if (selectedToken?.id === 'ton' || !selectedToken?.contractAddress) {
+        // Send native TON
+        result = await tonService.sendTON({
+          mnemonic: wallet.mnemonic,
+          recipientAddress: recipient,
+          amount,
+          memo
+        });
+      } else {
+        // Send Jetton token
+        result = await tonService.sendJetton({
+          mnemonic: wallet.mnemonic,
+          jettonMasterAddress: selectedToken.contractAddress,
+          recipientAddress: recipient,
+          amount,
+          decimals: selectedToken.decimals
+        });
+      }
       
       if (result.success) {
-        await updateTransactionStatus(pendingTx.id, 'completed');
+        await updateTransactionStatus(pendingTx.id, 'completed', result.txHash || undefined);
         toast.success('Transaction sent successfully!');
         navigate('/dashboard');
       } else {

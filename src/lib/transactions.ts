@@ -76,7 +76,7 @@ export async function addTransaction(
       sender_address: transaction.type === 'receive' ? transaction.address : walletAddress,
       recipient_address: transaction.type === 'send' ? transaction.address : walletAddress,
       status: transaction.status,
-      tx_hash: transaction.txHash,
+      tx_hash: transaction.txHash || 'pending',
       memo: transaction.memo,
     })
     .select()

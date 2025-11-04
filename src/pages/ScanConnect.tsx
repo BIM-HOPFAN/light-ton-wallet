@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, ScanLine, Link2 } from 'lucide-react';
+import { ArrowLeft, ScanLine, Link2, Upload, Flashlight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Html5Qrcode } from 'html5-qrcode';
 import { connectWithUri } from '@/lib/walletconnect';
@@ -13,8 +13,10 @@ export default function ScanConnect() {
   const [showScanner, setShowScanner] = useState(false);
   const [manualUri, setManualUri] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isFlashlightOn, setIsFlashlightOn] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isScanningRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
@@ -32,7 +34,7 @@ export default function ScanConnect() {
 
       const devices = await Html5Qrcode.getCameras();
       if (!devices || devices.length === 0) {
-        throw new Error('No cameras found');
+        throw new Error('No cameras found. Please ensure your device has a camera and permissions are granted.');
       }
 
       // Try to find back camera, otherwise use first available
@@ -48,12 +50,14 @@ export default function ScanConnect() {
         {
           fps: 10,
           qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
         },
         async (decodedText) => {
           // Success callback
           isScanningRef.current = false;
           await scanner.stop();
           setShowScanner(false);
+          setIsFlashlightOn(false);
           await handleConnect(decodedText);
         },
         (errorMessage) => {
@@ -63,10 +67,11 @@ export default function ScanConnect() {
       );
       
       isScanningRef.current = true;
+      toast.success('Camera started successfully');
     } catch (err) {
       console.error('Failed to start scanner:', err);
       const errorMsg = err instanceof Error ? err.message : 'Unknown error';
-      toast.error(`Camera error: ${errorMsg}. Please allow camera access in your browser settings.`);
+      toast.error(`Camera access denied or unavailable. Please check browser permissions.`);
       setShowScanner(false);
     }
   };
@@ -81,6 +86,47 @@ export default function ScanConnect() {
       }
     }
     setShowScanner(false);
+    setIsFlashlightOn(false);
+  };
+
+  const toggleFlashlight = async () => {
+    if (!scannerRef.current || !isScanningRef.current) return;
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities() as any;
+      
+      if (capabilities.torch) {
+        await track.applyConstraints({
+          advanced: [{ torch: !isFlashlightOn } as any]
+        });
+        setIsFlashlightOn(!isFlashlightOn);
+        toast.success(isFlashlightOn ? 'Flashlight off' : 'Flashlight on');
+      } else {
+        toast.error('Flashlight not supported on this device');
+      }
+    } catch (err) {
+      console.error('Flashlight error:', err);
+      toast.error('Could not toggle flashlight');
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const scanner = new Html5Qrcode('qr-reader');
+      const result = await scanner.scanFile(file, true);
+      await handleConnect(result);
+      toast.success('QR code read from image');
+    } catch (err) {
+      console.error('Failed to read QR from file:', err);
+      toast.error('Could not read QR code from image');
+    }
   };
 
   useEffect(() => {
@@ -143,14 +189,32 @@ export default function ScanConnect() {
           <Card className="p-6">
             <h3 className="font-semibold mb-4">Scan QR Code</h3>
             {!showScanner ? (
-              <Button
-                onClick={() => setShowScanner(true)}
-                className="w-full"
-                size="lg"
-              >
-                <ScanLine className="mr-2 h-5 w-5" />
-                Open Camera
-              </Button>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => setShowScanner(true)}
+                  className="w-full"
+                  size="lg"
+                >
+                  <ScanLine className="mr-2 h-5 w-5" />
+                  Open Camera
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full"
+                  size="lg"
+                >
+                  <Upload className="mr-2 h-5 w-5" />
+                  Upload QR Image
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
             ) : (
               <div className="space-y-4">
                 <div className="rounded-lg overflow-hidden border bg-background">
@@ -160,13 +224,23 @@ export default function ScanConnect() {
                     style={{ minHeight: '400px' }}
                   />
                 </div>
-                <Button
-                  variant="outline"
-                  onClick={stopScanning}
-                  className="w-full"
-                >
-                  Cancel
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={toggleFlashlight}
+                    className="flex-1"
+                  >
+                    <Flashlight className={`mr-2 h-5 w-5 ${isFlashlightOn ? 'text-yellow-500' : ''}`} />
+                    {isFlashlightOn ? 'Light Off' : 'Light On'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={stopScanning}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
             )}
           </Card>

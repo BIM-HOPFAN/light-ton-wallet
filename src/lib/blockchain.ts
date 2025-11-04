@@ -102,6 +102,45 @@ class BlockchainService {
       return false;
     }
   }
+
+  async getJettonMetadata(tokenContractAddress: string): Promise<{ name?: string; symbol?: string; image?: string; decimals?: number }> {
+    try {
+      const client = this.getClient();
+      const tokenAddr = Address.parse(tokenContractAddress);
+      
+      // Get jetton data from master contract
+      const jettonData = await client.runMethod(tokenAddr, 'get_jetton_data');
+      
+      // Read the content cell which contains metadata
+      const contentCell = jettonData.stack.readCell();
+      const contentSlice = contentCell.beginParse();
+      
+      // Read the off-chain content flag (0x01 for off-chain)
+      const offChainFlag = contentSlice.loadUint(8);
+      
+      if (offChainFlag === 0x01) {
+        // Read the URI
+        const uriBytes = contentSlice.loadBuffer(contentSlice.remainingBits / 8);
+        const uri = uriBytes.toString('utf-8');
+        
+        // Fetch metadata from URI
+        const response = await fetch(uri);
+        const metadata = await response.json();
+        
+        return {
+          name: metadata.name,
+          symbol: metadata.symbol,
+          image: metadata.image,
+          decimals: metadata.decimals || 9
+        };
+      }
+      
+      return {};
+    } catch (error) {
+      console.error('Error fetching jetton metadata:', error);
+      return {};
+    }
+  }
 }
 
 export const blockchainService = new BlockchainService();

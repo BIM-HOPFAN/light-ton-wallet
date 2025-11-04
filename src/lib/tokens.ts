@@ -1,4 +1,5 @@
 import bimcoinLogo from '@/assets/bimcoin-logo.svg';
+import { blockchainService } from './blockchain';
 
 export type Network = 'TON' | 'Ethereum' | 'Binance Smart Chain' | 'Polygon' | 'Solana' | 'Bitcoin';
 
@@ -151,4 +152,18 @@ export function getTokenById(tokenId: string): Token | undefined {
 
 export function resetToDefaultTokens(): void {
   localStorage.setItem(TOKENS_KEY, JSON.stringify(DEFAULT_TOKENS));
+}
+
+export async function fetchTokenMetadata(contractAddress: string): Promise<{ icon?: string; name?: string; symbol?: string }> {
+  try {
+    const metadata = await blockchainService.getJettonMetadata(contractAddress);
+    return {
+      icon: metadata.image,
+      name: metadata.name,
+      symbol: metadata.symbol
+    };
+  } catch (error) {
+    console.error('Error fetching token metadata:', error);
+    return {};
+  }
 }

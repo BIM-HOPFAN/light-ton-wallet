@@ -25,7 +25,7 @@ export default function WalletCard() {
     const loadTokensWithBalances = async () => {
       const allTokens = getTokens();
       
-      // Fetch balances for tokens with contract addresses
+      // Fetch balances and metadata for tokens with contract addresses
       if (wallet?.address) {
         const tokensWithBalances = await Promise.all(
           allTokens.map(async (token) => {
@@ -35,9 +35,18 @@ export default function WalletCard() {
                   wallet.address,
                   token.contractAddress
                 );
+                
+                // Fetch metadata from blockchain for Bimcoin
+                if (token.symbol === 'BIM') {
+                  const metadata = await blockchainService.getJettonMetadata(token.contractAddress);
+                  if (metadata.image) {
+                    return { ...token, balance, icon: metadata.image };
+                  }
+                }
+                
                 return { ...token, balance };
               } catch (error) {
-                console.error(`Failed to fetch balance for ${token.symbol}:`, error);
+                console.error(`Failed to fetch data for ${token.symbol}:`, error);
                 return { ...token, balance: '0.00' };
               }
             }

@@ -42,7 +42,7 @@ export const DEFAULT_TOKENS: Token[] = [
     name: 'Bimcoin',
     decimals: 9,
     network: 'TON',
-    contractAddress: 'EQB0ePLIUc02kwXNA7ulK-vlotIxIqrEfD0tBC53Bmz6DCRO',
+    contractAddress: 'UQCv2zOQoWzM8HI5jnNs8KJQngGNHfwnJ4n7DH8gT3wAt_Yk',
     icon: bimcoinLogo,
   },
   {

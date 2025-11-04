@@ -188,7 +188,11 @@ export default function Send() {
                   <SelectValue>
                     {selectedToken && (
                       <div className="flex items-center gap-2">
-                        <span>{selectedToken.icon || '🪙'}</span>
+                        {typeof selectedToken.icon === 'string' && (selectedToken.icon.includes('/assets/') || selectedToken.icon.startsWith('data:') || selectedToken.icon.endsWith('.svg') || selectedToken.icon.endsWith('.png')) ? (
+                          <img src={selectedToken.icon} alt={selectedToken.name} className="w-5 h-5 object-contain" />
+                        ) : (
+                          <span>{selectedToken.icon || '🪙'}</span>
+                        )}
                         <span>{selectedToken.symbol}</span>
                         <span className="text-muted-foreground text-sm">
                           {selectedToken.network} - ({selectedToken.id === 'ton' ? balance : selectedToken.balance || '0.00'})
@@ -201,7 +205,11 @@ export default function Send() {
                   {tokens.map((token) => (
                     <SelectItem key={token.id} value={token.id}>
                       <div className="flex items-center gap-2">
-                        <span>{token.icon || '🪙'}</span>
+                        {typeof token.icon === 'string' && (token.icon.includes('/assets/') || token.icon.startsWith('data:') || token.icon.endsWith('.svg') || token.icon.endsWith('.png')) ? (
+                          <img src={token.icon} alt={token.name} className="w-5 h-5 object-contain" />
+                        ) : (
+                          <span>{token.icon || '🪙'}</span>
+                        )}
                         <span>{token.symbol}</span>
                         <span className="text-muted-foreground text-sm">
                           {token.network} - ({token.id === 'ton' ? balance : token.balance || '0.00'})

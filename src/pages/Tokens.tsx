@@ -115,7 +115,7 @@ export default function Tokens() {
             <Card key={token.id} className="p-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl overflow-hidden">
-                  {typeof token.icon === 'string' && token.icon.endsWith('.svg') ? (
+                  {typeof token.icon === 'string' && (token.icon.includes('/assets/') || token.icon.startsWith('data:') || token.icon.endsWith('.svg') || token.icon.endsWith('.png')) ? (
                     <img src={token.icon} alt={token.name} className="w-10 h-10 object-contain" />
                   ) : (
                     <span>{token.icon || '🪙'}</span>

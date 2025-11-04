@@ -149,7 +149,7 @@ export default function WalletCard() {
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-lg overflow-hidden">
-                  {typeof token.icon === 'string' && token.icon.endsWith('.svg') ? (
+                  {typeof token.icon === 'string' && (token.icon.includes('/assets/') || token.icon.startsWith('data:') || token.icon.endsWith('.svg') || token.icon.endsWith('.png')) ? (
                     <img src={token.icon} alt={token.name} className="w-6 h-6 object-contain" />
                   ) : (
                     <span>{token.icon || '🪙'}</span>

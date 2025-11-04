@@ -32,7 +32,7 @@ export class TONService {
     recipientAddress: string;
     amount: string;
     memo?: string;
-  }): Promise<{ success: boolean; error?: string }> {
+  }): Promise<{ success: boolean; error?: string; txHash?: string }> {
     try {
       const keyPair = await mnemonicToPrivateKey(params.mnemonic.split(' '));
       
@@ -61,11 +61,15 @@ export class TONService {
       });
       
       // Wait for confirmation
+      const walletAddress = wallet.address.toString();
       for (let attempt = 0; attempt < 30; attempt++) {
         await new Promise(resolve => setTimeout(resolve, 2000));
         const currentSeqno = await contract.getSeqno();
         if (currentSeqno > seqno) {
-          return { success: true };
+          return { 
+            success: true,
+            txHash: `${seqno}_${walletAddress}`
+          };
         }
       }
       

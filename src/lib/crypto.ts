@@ -14,10 +14,11 @@ export interface EncryptedWallet {
   iv: string;
 }
 
-// Generate new wallet with 24-word mnemonic
+// Generate new wallet with 24-word mnemonic (TON standard)
 export async function createWallet(): Promise<WalletData> {
-  const mnemonic = bip39.generateMnemonic(256); // 24 words
-  const keyPair = await mnemonicToPrivateKey(mnemonic.split(' '));
+  const mnemonic = bip39.generateMnemonic(256); // 24 words - TON standard
+  const words = mnemonic.split(' ');
+  const keyPair = await mnemonicToPrivateKey(words);
   
   const wallet = WalletContractV4.create({
     workchain: 0,
@@ -31,21 +32,29 @@ export async function createWallet(): Promise<WalletData> {
   };
 }
 
-// Restore wallet from mnemonic
+// Restore wallet from mnemonic (supports both 12 and 24-word mnemonics for TON compatibility)
 export async function restoreWallet(mnemonic: string): Promise<WalletData | null> {
-  if (!bip39.validateMnemonic(mnemonic)) {
+  const trimmedMnemonic = mnemonic.trim().toLowerCase();
+  
+  // Validate mnemonic using BIP39 standard
+  if (!bip39.validateMnemonic(trimmedMnemonic)) {
     return null;
   }
   
   try {
-    const keyPair = await mnemonicToPrivateKey(mnemonic.split(' '));
+    const words = trimmedMnemonic.split(' ');
+    
+    // TON standard derivation using official @ton/crypto library
+    const keyPair = await mnemonicToPrivateKey(words);
+    
+    // Use WalletContractV4 for maximum compatibility with TON ecosystem
     const wallet = WalletContractV4.create({
       workchain: 0,
       publicKey: keyPair.publicKey
     });
     
     return {
-      mnemonic,
+      mnemonic: trimmedMnemonic,
       address: wallet.address.toString({ bounceable: false }),
       publicKey: Buffer.from(keyPair.publicKey).toString('hex')
     };

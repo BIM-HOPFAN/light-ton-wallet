@@ -23,16 +23,20 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   
   useEffect(() => {
     // Check if wallet exists on mount
-    if (hasWallet() && !wallet) {
-      setIsLocked(true);
+    if (hasWallet()) {
       const active = getActiveWallet();
       if (active) {
         setActiveWalletId(active.id);
+        // Don't automatically set isLocked to true on page refresh
+        // Let the Unlock page handle the lock check based on auto-lock timer
+        if (!wallet) {
+          setIsLocked(true);
+        }
       }
-    } else if (!hasWallet()) {
+    } else {
       setIsLocked(false);
     }
-  }, [wallet]);
+  }, []);
   
   return (
     <WalletContext.Provider value={{ wallet, setWallet, activeWalletId, setActiveWalletId, isLocked, setIsLocked, balance, setBalance }}>

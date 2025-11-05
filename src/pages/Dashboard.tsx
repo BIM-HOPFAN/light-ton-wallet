@@ -27,18 +27,20 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState<any[]>([]);
   
   useEffect(() => {
-    if (isLocked || !wallet) {
+    // First check if wallet exists and is not locked
+    if (!wallet) {
       navigate('/unlock');
       return;
     }
 
-    // Check if session should be locked based on last activity time
-    if (autoLockService.shouldLock()) {
-      setIsLocked(true);
+    if (isLocked) {
       navigate('/unlock');
-      toast.info('Wallet locked due to inactivity');
       return;
     }
+
+    // IMPORTANT: Reset the auto-lock timer immediately when Dashboard mounts
+    // This prevents false positives on page refresh
+    autoLockService.updateLastActivity();
     
     // Initialize Telegram WebApp if available
     if (telegramService.isAvailable()) {
@@ -62,31 +64,45 @@ export default function Dashboard() {
     // Fetch balance and transactions
     const fetchBalance = async () => {
       if (wallet?.address) {
-        const bal = await blockchainService.getBalance(wallet.address);
-        setBalance(bal);
+        try {
+          console.log('Fetching balance for:', wallet.address);
+          const bal = await blockchainService.getBalance(wallet.address);
+          console.log('Balance fetched:', bal);
+          setBalance(bal);
+        } catch (error) {
+          console.error('Balance fetch error:', error);
+          toast.error('Failed to fetch balance');
+        }
       }
     };
 
     const fetchTransactions = async () => {
       if (user?.id && wallet?.address) {
-        const txs = await getTransactions(user.id, wallet.address);
-        setTransactions(txs);
+        try {
+          const txs = await getTransactions(user.id, wallet.address);
+          setTransactions(txs);
+        } catch (error) {
+          console.error('Transaction fetch error:', error);
+        }
       }
     };
     
+    // Initial fetch
     fetchBalance();
     fetchTransactions();
+    
+    // Refresh every 10 seconds
     const interval = setInterval(() => {
       fetchBalance();
       fetchTransactions();
-    }, 10000); // Refresh every 10s
+    }, 10000);
     
     return () => {
       clearInterval(interval);
       autoLockService.stopTimer();
       autoLockService.removeActivityListeners();
     };
-  }, [wallet, isLocked, navigate, setBalance, setIsLocked]);
+  }, [wallet, isLocked, navigate, setBalance, setIsLocked, user]);
   
   const handleLogout = () => {
     if (confirm('Are you sure you want to log out? Make sure you have your recovery phrase saved.')) {

@@ -23,6 +23,16 @@ export default function Unlock() {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   
   useEffect(() => {
+    // Check if session actually expired based on auto-lock timer
+    if (!autoLockService.shouldLock()) {
+      // Session is still valid, check if we have an encrypted wallet
+      const encrypted = getEncryptedWallet();
+      if (encrypted) {
+        // Don't auto-unlock, but let user know session is valid
+        console.log('Session still valid, waiting for PIN');
+      }
+    }
+    
     checkBiometricSettings();
   }, []);
   

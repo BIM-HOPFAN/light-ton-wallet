@@ -31,6 +31,14 @@ export default function Dashboard() {
       navigate('/unlock');
       return;
     }
+
+    // Check if session should be locked based on last activity time
+    if (autoLockService.shouldLock()) {
+      setIsLocked(true);
+      navigate('/unlock');
+      toast.info('Wallet locked due to inactivity');
+      return;
+    }
     
     // Initialize Telegram WebApp if available
     if (telegramService.isAvailable()) {
@@ -83,6 +91,7 @@ export default function Dashboard() {
   const handleLogout = () => {
     if (confirm('Are you sure you want to log out? Make sure you have your recovery phrase saved.')) {
       deleteWallet();
+      autoLockService.clearSession(); // Clear session data on logout
       setWallet(null);
       setIsLocked(true);
       toast.success('Logged out successfully');

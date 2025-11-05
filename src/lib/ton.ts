@@ -47,10 +47,18 @@ export class TONService {
       // Convert TON to nanoTON
       const amountNano = Math.floor(parseFloat(params.amount) * 1e9).toString();
       
-      const transfer = internal({
+      // Create transfer with memo if provided
+      const transfer = params.memo ? internal({
         to: params.recipientAddress,
         value: amountNano,
-        body: params.memo || '',
+        body: beginCell()
+          .storeUint(0, 32) // text comment op code
+          .storeStringTail(params.memo)
+          .endCell(),
+        bounce: false
+      }) : internal({
+        to: params.recipientAddress,
+        value: amountNano,
         bounce: false
       });
       

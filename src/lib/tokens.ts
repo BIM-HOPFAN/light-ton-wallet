@@ -44,7 +44,7 @@ export const DEFAULT_TOKENS: Token[] = [
     decimals: 9,
     network: 'TON',
     contractAddress: 'UQCv2zOQoWzM8HI5jnNs8KJQngGNHfwnJ4n7DH8gT3wAt_Yk',
-    icon: bimcoinLogo,
+    icon: '🪙', // Will be replaced by blockchain logo
   },
   {
     id: 'ngnb',

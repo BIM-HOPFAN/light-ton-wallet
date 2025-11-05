@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,22 +14,64 @@ export default function ScanConnect() {
   const [manualUri, setManualUri] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [cameraReady, setCameraReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Request camera permissions on mount
+  useEffect(() => {
+    const requestCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'environment' } 
+        });
+        // Stop the stream immediately, we just wanted to trigger permission
+        stream.getTracks().forEach(track => track.stop());
+        setCameraReady(true);
+      } catch (err) {
+        console.error('Camera permission error:', err);
+        setCameraReady(false);
+      }
+    };
+    
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      requestCameraPermission();
+    } else {
+      setCameraError('Camera is not supported on this device');
+    }
+  }, []);
+
   const handleScan = async (data: any) => {
-    if (data) {
-      const scannedText = typeof data === 'string' ? data : data.text;
-      if (scannedText) {
-        setShowScanner(false);
-        await handleConnect(scannedText);
+    if (data && !isConnecting) {
+      try {
+        const scannedText = typeof data === 'string' ? data : data?.text || data;
+        console.log('QR Scanned:', scannedText);
+        
+        if (scannedText && typeof scannedText === 'string') {
+          closeCamera();
+          await handleConnect(scannedText);
+        }
+      } catch (error) {
+        console.error('Error processing scan:', error);
       }
     }
   };
 
   const handleError = (err: any) => {
     console.error('QR Scanner Error:', err);
-    setCameraError('Camera access denied or unavailable. Please check permissions.');
-    toast.error('Camera access denied. Please allow camera permissions in your browser settings.');
+    
+    let errorMessage = 'Camera error. Please check permissions.';
+    
+    if (err?.name === 'NotAllowedError' || err?.message?.includes('Permission denied')) {
+      errorMessage = 'Camera access denied. Please allow camera permissions in your browser settings.';
+    } else if (err?.name === 'NotFoundError') {
+      errorMessage = 'No camera found on this device.';
+    } else if (err?.name === 'NotReadableError') {
+      errorMessage = 'Camera is already in use by another application.';
+    }
+    
+    setCameraError(errorMessage);
+    toast.error(errorMessage);
+    setShowScanner(false);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,10 +125,34 @@ export default function ScanConnect() {
     handleConnect(manualUri);
   };
 
-  const openCamera = () => {
+  const openCamera = async () => {
     setCameraError('');
-    setShowScanner(true);
-    toast.info('Starting camera...');
+    
+    try {
+      // Request camera permission explicitly
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      
+      // Stop the test stream
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Now show the scanner
+      setShowScanner(true);
+      toast.success('Camera ready');
+    } catch (err: any) {
+      console.error('Camera open error:', err);
+      
+      let errorMessage = 'Could not open camera';
+      if (err.name === 'NotAllowedError') {
+        errorMessage = 'Camera permission denied. Please allow camera access in your browser settings.';
+      } else if (err.name === 'NotFoundError') {
+        errorMessage = 'No camera found on this device.';
+      }
+      
+      setCameraError(errorMessage);
+      toast.error(errorMessage);
+    }
   };
 
   const closeCamera = () => {
@@ -140,19 +206,21 @@ export default function ScanConnect() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="relative rounded-lg overflow-hidden border-2 border-primary bg-black">
+                <div className="relative rounded-lg overflow-hidden border-2 border-primary bg-black aspect-square">
                   <QrScanner
                     delay={300}
                     onError={handleError}
                     onScan={handleScan}
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', height: '100%' }}
                     constraints={{
+                      audio: false,
                       video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        facingMode: { ideal: 'environment' },
+                        width: { min: 640, ideal: 1280, max: 1920 },
+                        height: { min: 480, ideal: 720, max: 1080 }
                       }
                     }}
+                    legacyMode={false}
                   />
                   <div className="absolute inset-0 pointer-events-none">
                     <div className="absolute inset-0 border-2 border-primary/50" style={{

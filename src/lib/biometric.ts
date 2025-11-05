@@ -73,12 +73,14 @@ export class BiometricService {
     try {
       const available = await this.isAvailable();
       if (!available) {
+        console.error('Biometric not available');
         return false;
       }
 
       const credentialId = localStorage.getItem('biometric_credential_id');
       if (!credentialId) {
-        throw new Error('No biometric credential registered');
+        console.error('No biometric credential registered');
+        return false;
       }
 
       // Generate challenge (in production, get this from server)
@@ -100,9 +102,20 @@ export class BiometricService {
         publicKey: publicKeyOptions,
       });
 
-      return assertion !== null;
-    } catch (error) {
+      if (!assertion) {
+        console.error('No assertion returned');
+        return false;
+      }
+
+      return true;
+    } catch (error: any) {
       console.error('Biometric authentication failed:', error);
+      // Handle specific error cases
+      if (error.name === 'NotAllowedError') {
+        console.error('User cancelled biometric authentication');
+      } else if (error.name === 'InvalidStateError') {
+        console.error('Invalid biometric state');
+      }
       return false;
     }
   }

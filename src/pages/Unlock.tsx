@@ -12,6 +12,7 @@ import { useWallet } from '@/contexts/WalletContext';
 import { toast } from 'sonner';
 import { biometricService } from '@/lib/biometric';
 import { supabase } from '@/integrations/supabase/client';
+import { autoLockService } from '@/lib/autolock';
 
 export default function Unlock() {
   const navigate = useNavigate();
@@ -107,6 +108,9 @@ export default function Unlock() {
         return;
       }
       
+      // Reset auto-lock timer and update last activity
+      autoLockService.startTimer();
+      
       setWallet(wallet);
       setIsLocked(false);
       toast.success('Wallet unlocked');
@@ -169,7 +173,7 @@ export default function Unlock() {
           <Button
             variant="ghost"
             className="w-full"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/wallet-manager')}
           >
             Use Different Wallet
           </Button>

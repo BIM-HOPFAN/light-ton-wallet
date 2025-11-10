@@ -10,8 +10,13 @@ import { blockchainService, Network as NetworkType } from '@/lib/blockchain';
 import { currencyService, Currency } from '@/lib/currency';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function WalletCard() {
+interface WalletCardProps {
+  isLoading?: boolean;
+}
+
+export default function WalletCard({ isLoading = false }: WalletCardProps) {
   const { wallet, balance } = useWallet();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -122,12 +127,21 @@ export default function WalletCard() {
       
       <div className="text-center mb-6">
         <p className="text-sm text-muted-foreground mb-2">Total Balance</p>
-        <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-          {balance} TON
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          ≈ {currencyService.formatCurrency(fiatBalance, currency)}
-        </p>
+        {isLoading ? (
+          <div className="flex flex-col items-center gap-2">
+            <Skeleton className="h-14 w-48" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+        ) : (
+          <>
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              {balance} TON
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              ≈ {currencyService.formatCurrency(fiatBalance, currency)}
+            </p>
+          </>
+        )}
       </div>
       
       {wallet && (

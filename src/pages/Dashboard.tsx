@@ -25,6 +25,39 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+
+  // Fetch balance and transactions functions
+  const fetchBalance = async (showLoading = false) => {
+    if (wallet?.address) {
+      try {
+        if (showLoading) setIsLoadingBalance(true);
+        console.log('Fetching balance for:', wallet.address);
+        const bal = await blockchainService.getBalance(wallet.address);
+        console.log('Balance fetched:', bal);
+        setBalance(bal);
+      } catch (error) {
+        console.error('Balance fetch error:', error);
+        toast.error('Failed to fetch balance');
+      } finally {
+        if (showLoading) setIsLoadingBalance(false);
+      }
+    }
+  };
+
+  const fetchTransactions = async () => {
+    if (user?.id && wallet?.address) {
+      try {
+        const txs = await getTransactions(user.id, wallet.address);
+        setTransactions(txs);
+      } catch (error) {
+        console.error('Transaction fetch error:', error);
+      }
+    }
+  };
   
   useEffect(() => {
     // First check if wallet exists and is not locked
@@ -61,39 +94,13 @@ export default function Dashboard() {
     autoLockService.setupActivityListeners();
     autoLockService.startTimer();
     
-    // Fetch balance and transactions
-    const fetchBalance = async () => {
-      if (wallet?.address) {
-        try {
-          console.log('Fetching balance for:', wallet.address);
-          const bal = await blockchainService.getBalance(wallet.address);
-          console.log('Balance fetched:', bal);
-          setBalance(bal);
-        } catch (error) {
-          console.error('Balance fetch error:', error);
-          toast.error('Failed to fetch balance');
-        }
-      }
-    };
-
-    const fetchTransactions = async () => {
-      if (user?.id && wallet?.address) {
-        try {
-          const txs = await getTransactions(user.id, wallet.address);
-          setTransactions(txs);
-        } catch (error) {
-          console.error('Transaction fetch error:', error);
-        }
-      }
-    };
-    
-    // Initial fetch
-    fetchBalance();
+    // Initial fetch with loading indicator
+    fetchBalance(true);
     fetchTransactions();
     
-    // Refresh every 10 seconds
+    // Refresh every 10 seconds (without loading indicator)
     const interval = setInterval(() => {
-      fetchBalance();
+      fetchBalance(false);
       fetchTransactions();
     }, 10000);
     
@@ -114,11 +121,69 @@ export default function Dashboard() {
       navigate('/');
     }
   };
+
+  const handleRefresh = async () => {
+    setIsLoadingBalance(true);
+    await Promise.all([
+      fetchBalance(true),
+      fetchTransactions()
+    ]);
+    toast.success('Data refreshed');
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    if (scrollTop === 0) {
+      setTouchStart(e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    if (scrollTop === 0 && touchStart > 0) {
+      const currentTouch = e.touches[0].clientY;
+      const distance = Math.max(0, currentTouch - touchStart);
+      
+      if (distance > 0 && distance <= 100) {
+        setPullDistance(distance);
+        setIsPulling(true);
+      }
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullDistance > 60) {
+      await handleRefresh();
+    }
+    setIsPulling(false);
+    setPullDistance(0);
+    setTouchStart(0);
+  };
   
   if (!wallet) return null;
   
   return (
-    <div className="min-h-screen">
+    <div 
+      className="min-h-screen"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull to refresh indicator */}
+      {isPulling && (
+        <div 
+          className="fixed top-0 left-0 right-0 flex justify-center items-center z-50 transition-all"
+          style={{ 
+            height: `${pullDistance}px`,
+            opacity: pullDistance / 100
+          }}
+        >
+          <div className="bg-primary/10 backdrop-blur-sm rounded-full p-3 animate-pulse">
+            <ArrowRight className="h-6 w-6 text-primary rotate-[-90deg]" />
+          </div>
+        </div>
+      )}
+      
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <img src={bimlightLogo} alt="Bimlight Bank" className="h-8 w-auto" />
@@ -151,7 +216,7 @@ export default function Dashboard() {
       </header>
       
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <WalletCard />
+        <WalletCard isLoading={isLoadingBalance} />
 
         {/* Price Chart */}
         <div className="my-6">

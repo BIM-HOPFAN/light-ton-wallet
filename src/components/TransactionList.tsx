@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-react';
-import { getTransactions, Transaction } from '@/lib/transactions';
+import { getAllTransactions, Transaction } from '@/lib/transactions';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWallet } from '@/contexts/WalletContext';
@@ -11,17 +11,19 @@ export default function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   
   useEffect(() => {
-    // Load transactions from Supabase
+    // Load transactions from blockchain + database
     const loadTransactions = async () => {
-      if (!user || !wallet) return;
-      const txs = await getTransactions(user.id, wallet.address);
+      if (!wallet) return;
+      const txs = user?.id 
+        ? await getAllTransactions(user.id, wallet.address)
+        : await getAllTransactions('', wallet.address);
       setTransactions(txs);
     };
     
     loadTransactions();
     
-    // Refresh every 5 seconds to catch new transactions
-    const interval = setInterval(loadTransactions, 5000);
+    // Refresh every 10 seconds to catch new blockchain transactions
+    const interval = setInterval(loadTransactions, 10000);
     return () => clearInterval(interval);
   }, [user, wallet]);
   const formatAddress = (address: string) => {

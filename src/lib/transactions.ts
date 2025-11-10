@@ -1,4 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
+import { blockchainService } from '@/lib/blockchain';
+import { Address } from '@ton/ton';
 
 export interface Transaction {
   id: string;
@@ -30,7 +32,63 @@ export function getLegacyTransactions(): Transaction[] {
   }
 }
 
-// Get transactions from Supabase
+// Get transactions from blockchain
+export async function getBlockchainTransactions(walletAddress: string): Promise<Transaction[]> {
+  try {
+    const rawTxs = await blockchainService.getTransactions(walletAddress, 20);
+    const myAddress = Address.parse(walletAddress);
+    
+    return rawTxs.map((tx: any) => {
+      // Determine if this is a send or receive transaction
+      const inMsg = tx.inMessage;
+      const outMsgs = tx.outMessages;
+      
+      let type: 'send' | 'receive' = 'receive';
+      let amount = '0';
+      let otherAddress = '';
+      
+      // Check incoming message
+      if (inMsg && inMsg.value) {
+        const value = Number(inMsg.value) / 1e9;
+        if (value > 0) {
+          type = 'receive';
+          amount = value.toFixed(4);
+          otherAddress = inMsg.source?.toString() || '';
+        }
+      }
+      
+      // Check outgoing messages
+      if (outMsgs && outMsgs.length > 0) {
+        const outMsg = outMsgs[0];
+        if (outMsg.value) {
+          const value = Number(outMsg.value) / 1e9;
+          if (value > 0) {
+            type = 'send';
+            amount = value.toFixed(4);
+            otherAddress = outMsg.destination?.toString() || '';
+          }
+        }
+      }
+
+      return {
+        id: tx.hash().toString('hex'),
+        type,
+        amount,
+        token: 'TON',
+        network: blockchainService.getNetwork(),
+        address: otherAddress,
+        timestamp: new Date(tx.now * 1000),
+        status: 'completed' as const,
+        txHash: tx.hash().toString('hex'),
+      };
+    }).filter(tx => parseFloat(tx.amount) > 0); // Filter out zero-value transactions
+  } catch (error) {
+    console.error('Error fetching blockchain transactions:', error);
+    return [];
+  }
+}
+
+// Get transactions from Supabase (for app-specific data)
 export async function getTransactions(userId: string, walletAddress: string): Promise<Transaction[]> {
   const { data, error } = await supabase
     .from('transaction_history')
@@ -56,6 +114,39 @@ export async function getTransactions(userId: string, walletAddress: string): Pr
     txHash: tx.tx_hash || undefined,
     memo: tx.memo || undefined,
   }));
+}
+
+// Combined: Get all transactions (blockchain + database)
+export async function getAllTransactions(userId: string, walletAddress: string): Promise<Transaction[]> {
+  const [blockchainTxs, dbTxs] = await Promise.all([
+    getBlockchainTransactions(walletAddress),
+    getTransactions(userId, walletAddress),
+  ]);
+
+  // Merge and deduplicate by txHash
+  const txMap = new Map<string, Transaction>();
+  
+  // Add blockchain transactions first (source of truth)
+  blockchainTxs.forEach(tx => {
+    if (tx.txHash) {
+      txMap.set(tx.txHash, tx);
+    }
+  });
+  
+  // Add database transactions that aren't already in the map
+  dbTxs.forEach(tx => {
+    if (tx.txHash && !txMap.has(tx.txHash)) {
+      txMap.set(tx.txHash, tx);
+    } else if (!tx.txHash) {
+      // Pending transactions without hash
+      txMap.set(tx.id, tx);
+    }
+  });
+
+  // Sort by timestamp
+  return Array.from(txMap.values()).sort((a, b) => 
+    b.timestamp.getTime() - a.timestamp.getTime()
+  );
 }
 
 // Add transaction to Supabase

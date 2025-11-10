@@ -15,7 +15,7 @@ import { tonService } from '@/lib/ton';
 import { blockchainService } from '@/lib/blockchain';
 import { autoLockService } from '@/lib/autolock';
 import { deleteWallet } from '@/lib/storage';
-import { getTransactions } from '@/lib/transactions';
+import { getAllTransactions } from '@/lib/transactions';
 import { toast } from 'sonner';
 import { telegramService } from '@/lib/telegram';
 import bimlightLogo from '@/assets/bimlight-logo.png';
@@ -49,9 +49,12 @@ export default function Dashboard() {
   };
 
   const fetchTransactions = async () => {
-    if (user?.id && wallet?.address) {
+    if (wallet?.address) {
       try {
-        const txs = await getTransactions(user.id, wallet.address);
+        // Fetch blockchain transactions (works without user login)
+        const txs = user?.id 
+          ? await getAllTransactions(user.id, wallet.address)
+          : await getAllTransactions('', wallet.address);
         setTransactions(txs);
       } catch (error) {
         console.error('Transaction fetch error:', error);

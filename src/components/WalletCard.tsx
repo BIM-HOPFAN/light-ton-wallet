@@ -76,8 +76,16 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
 
   useEffect(() => {
     const convertBalance = async () => {
-      const fiat = await currencyService.convertTONtoFiat(balance, currency);
-      setFiatBalance(fiat);
+      try {
+        const fiat = await currencyService.convertTONtoFiat(balance, currency);
+        setFiatBalance(fiat);
+      } catch (error) {
+        console.error('Failed to convert balance:', error);
+        setFiatBalance('--');
+        if (!currencyService.hasRates()) {
+          toast.error('Unable to fetch live prices. Please check your connection.');
+        }
+      }
     };
     convertBalance();
   }, [balance, currency]);
@@ -138,7 +146,11 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
               {balance} TON
             </h1>
             <p className="text-muted-foreground mt-2">
-              ≈ {currencyService.formatCurrency(fiatBalance, currency)}
+              {fiatBalance === '--' ? (
+                <span className="text-destructive text-xs">Price unavailable</span>
+              ) : (
+                <>≈ {currencyService.formatCurrency(fiatBalance, currency)}</>
+              )}
             </p>
           </>
         )}

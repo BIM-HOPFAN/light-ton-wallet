@@ -36,30 +36,37 @@ export default function Dashboard() {
     if (wallet?.address) {
       try {
         if (showLoading) setIsLoadingBalance(true);
-        console.log('Fetching balance for:', wallet.address);
+        console.log('🔄 Fetching balance for:', wallet.address);
         const bal = await blockchainService.getBalance(wallet.address);
-        console.log('Balance fetched:', bal);
+        console.log('✅ Balance fetched:', bal);
         setBalance(bal);
       } catch (error) {
-        console.error('Balance fetch error:', error);
-        toast.error('Failed to fetch balance');
+        console.error('❌ Balance fetch error:', error);
+        toast.error('Failed to fetch balance. Please check your connection.');
       } finally {
         if (showLoading) setIsLoadingBalance(false);
       }
+    } else {
+      console.warn('⚠️ No wallet address available for balance fetch');
     }
   };
 
   const fetchTransactions = async () => {
     if (wallet?.address) {
       try {
+        console.log('🔄 Fetching transactions for:', wallet.address);
         // Fetch blockchain transactions (works without user login)
         const txs = user?.id 
           ? await getAllTransactions(user.id, wallet.address)
           : await getAllTransactions('', wallet.address);
+        console.log('✅ Transactions fetched:', txs.length, 'items');
         setTransactions(txs);
       } catch (error) {
-        console.error('Transaction fetch error:', error);
+        console.error('❌ Transaction fetch error:', error);
+        toast.error('Failed to fetch transactions');
       }
+    } else {
+      console.warn('⚠️ No wallet address available for transaction fetch');
     }
   };
   

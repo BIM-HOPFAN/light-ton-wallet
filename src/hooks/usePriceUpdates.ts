@@ -10,6 +10,7 @@ export function usePriceUpdates(currency: Currency = 'USD') {
 
     const fetchPrice = async () => {
       try {
+        setIsLoading(true);
         // Force fresh fetch by bypassing cache occasionally
         await currencyService.fetchLiveRates();
         const rate = await currencyService.getExchangeRate(currency);
@@ -18,11 +19,15 @@ export function usePriceUpdates(currency: Currency = 'USD') {
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('Failed to fetch price:', error);
+        console.error('❌ Failed to fetch price:', error);
         if (mounted) {
-          // Use cached rate on error
+          // Try to use cached rate on error
           const cachedRate = currencyService.getCachedRate(currency);
-          setPrice(cachedRate.toFixed(2));
+          if (cachedRate) {
+            setPrice(cachedRate.toFixed(2));
+          } else {
+            setPrice('--');
+          }
           setIsLoading(false);
         }
       }
@@ -31,8 +36,8 @@ export function usePriceUpdates(currency: Currency = 'USD') {
     // Initial fetch
     fetchPrice();
 
-    // Update every 15 seconds for real-time fluctuations
-    const interval = setInterval(fetchPrice, 15000);
+    // Update every 30 seconds (reduced from 15s to avoid rate limiting)
+    const interval = setInterval(fetchPrice, 30000);
 
     return () => {
       mounted = false;

@@ -47,48 +47,65 @@ export function PriceChart({ currency = 'USD' }: PriceChartProps) {
         
         // Fetch last 24 hours of price data
         const [chartResponse, statsResponse] = await Promise.all([
-          fetch(`https://api.coingecko.com/api/v3/coins/toncoin/market_chart?vs_currency=${vs_currency}&days=1&interval=hourly`),
-          fetch(`https://api.coingecko.com/api/v3/coins/toncoin?localization=false&tickers=false&community_data=false&developer_data=false`)
+          fetch(`https://api.coingecko.com/api/v3/coins/toncoin/market_chart?vs_currency=${vs_currency}&days=1&interval=hourly`, {
+            headers: { 'Accept': 'application/json' }
+          }),
+          fetch(`https://api.coingecko.com/api/v3/coins/toncoin?localization=false&tickers=false&community_data=false&developer_data=false`, {
+            headers: { 'Accept': 'application/json' }
+          })
         ]);
         
         if (chartResponse.ok) {
           const chartData = await chartResponse.json();
           
-          // Format data for the chart
-          const formattedData: ChartDataPoint[] = chartData.prices.map((item: [number, number]) => {
-            const timestamp = item[0];
-            const price = item[1];
-            const date = new Date(timestamp);
-            const hours = date.getHours();
+          if (chartData.prices && chartData.prices.length > 0) {
+            // Format data for the chart
+            const formattedData: ChartDataPoint[] = chartData.prices.map((item: [number, number]) => {
+              const timestamp = item[0];
+              const price = item[1];
+              const date = new Date(timestamp);
+              const hours = date.getHours();
+              
+              return {
+                time: `${hours}:00`,
+                price: parseFloat(price.toFixed(4)),
+                timestamp,
+              };
+            });
             
-            return {
-              time: `${hours}:00`,
-              price: parseFloat(price.toFixed(4)),
-              timestamp,
-            };
-          });
-          
-          setChartData(formattedData);
+            setChartData(formattedData);
+          } else {
+            throw new Error('No price data available');
+          }
+        } else {
+          const errorText = await chartResponse.text();
+          console.error('Chart API error:', chartResponse.status, errorText);
         }
 
         if (statsResponse.ok) {
           const statsData = await statsResponse.json();
-          setMarketStats({
-            market_cap: statsData.market_data.market_cap[vs_currency],
-            total_volume: statsData.market_data.total_volume[vs_currency],
-            circulating_supply: statsData.market_data.circulating_supply,
-            price_change_percentage_24h: statsData.market_data.price_change_percentage_24h,
-          });
+          if (statsData.market_data) {
+            setMarketStats({
+              market_cap: statsData.market_data.market_cap[vs_currency],
+              total_volume: statsData.market_data.total_volume[vs_currency],
+              circulating_supply: statsData.market_data.circulating_supply,
+              price_change_percentage_24h: statsData.market_data.price_change_percentage_24h,
+            });
+          }
+        } else {
+          console.error('Stats API error:', statsResponse.status);
         }
       } catch (error) {
-        console.error('Failed to fetch data:', error);
-        // Fallback to current price point only
+        console.error('❌ Failed to fetch chart/stats data:', error);
+        // Show minimal fallback data
         const currentPrice = parseFloat(price) || 0;
-        setChartData([{
-          time: 'Now',
-          price: currentPrice,
-          timestamp: Date.now(),
-        }]);
+        if (currentPrice > 0) {
+          setChartData([{
+            time: 'Now',
+            price: currentPrice,
+            timestamp: Date.now(),
+          }]);
+        }
       } finally {
         setIsLoadingChart(false);
       }

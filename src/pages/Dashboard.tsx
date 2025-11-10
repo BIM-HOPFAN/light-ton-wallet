@@ -6,6 +6,7 @@ import WalletCard from '@/components/WalletCard';
 import TransactionList from '@/components/TransactionList';
 import { PriceChart } from '@/components/PriceChart';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
+import { PriceAlerts } from '@/components/PriceAlerts';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
@@ -224,6 +225,11 @@ export default function Dashboard() {
         {/* Price Chart */}
         <div className="my-6">
           <PriceChart />
+        </div>
+
+        {/* Price Alerts */}
+        <div className="my-6">
+          <PriceAlerts />
         </div>
         
         {/* Quick Actions - Bimcart & Bank Featured */}

@@ -307,6 +307,42 @@ export type Database = {
           },
         ]
       }
+      price_alerts: {
+        Row: {
+          condition: string
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          target_price: number
+          triggered_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          condition: string
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          target_price: number
+          triggered_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          condition?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          target_price?: number
+          triggered_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null

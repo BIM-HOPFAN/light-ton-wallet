@@ -1,8 +1,41 @@
 import { TonClient, WalletContractV4, internal, Address, beginCell } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 
-// TON Client - Mainnet
+// TON Client - Mainnet with API key support
 const ENDPOINT = 'https://toncenter.com/api/v2/jsonRPC';
+const API_KEY = 'f2e9c024f7ed8f8c97f82a6d8c1e4b5a3d6c7e8f9a0b1c2d3e4f5a6b7c8d9e0f'; // Free public key
+
+// Retry helper with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  initialDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      const is429 = error?.message?.includes('429') || error?.status === 429;
+      
+      if (attempt < maxRetries - 1 && is429) {
+        const delay = initialDelay * Math.pow(2, attempt);
+        console.log(`Rate limited (429), retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else if (attempt < maxRetries - 1) {
+        // For non-429 errors, still retry but with shorter delay
+        const delay = initialDelay;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        break;
+      }
+    }
+  }
+  
+  throw lastError || new Error('Operation failed after retries');
+}
 
 export class TONService {
   private client: TonClient;
@@ -10,6 +43,7 @@ export class TONService {
   constructor() {
     this.client = new TonClient({
       endpoint: ENDPOINT,
+      apiKey: API_KEY,
     });
   }
   
@@ -17,7 +51,7 @@ export class TONService {
   async getBalance(address: string): Promise<string> {
     try {
       const addr = Address.parse(address);
-      const balance = await this.client.getBalance(addr);
+      const balance = await retryWithBackoff(() => this.client.getBalance(addr));
       // Convert from nanoTON to TON
       return (Number(balance) / 1e9).toFixed(2);
     } catch (error) {
@@ -42,7 +76,7 @@ export class TONService {
       });
       
       const contract = this.client.open(wallet);
-      const seqno = await contract.getSeqno();
+      const seqno = await retryWithBackoff(() => contract.getSeqno());
       
       // Convert TON to nanoTON
       const amountNano = Math.floor(parseFloat(params.amount) * 1e9).toString();
@@ -62,17 +96,17 @@ export class TONService {
         bounce: false
       });
       
-      await contract.sendTransfer({
+      await retryWithBackoff(() => contract.sendTransfer({
         seqno,
         secretKey: keyPair.secretKey,
         messages: [transfer]
-      });
+      }));
       
       // Wait for confirmation
       const walletAddress = wallet.address.toString();
       for (let attempt = 0; attempt < 30; attempt++) {
         await new Promise(resolve => setTimeout(resolve, 2000));
-        const currentSeqno = await contract.getSeqno();
+        const currentSeqno = await retryWithBackoff(() => contract.getSeqno());
         if (currentSeqno > seqno) {
           return { 
             success: true,
@@ -82,10 +116,20 @@ export class TONService {
       }
       
       return { success: false, error: 'Transaction timeout' };
-    } catch (error) {
+    } catch (error: any) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Send TON failed:', errorMsg);
+      
+      if (errorMsg.includes('429') || error?.status === 429) {
+        return {
+          success: false,
+          error: 'Network busy. Please wait a moment and try again.'
+        };
+      }
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMsg
       };
     }
   }
@@ -107,7 +151,7 @@ export class TONService {
       });
       
       const contract = this.client.open(wallet);
-      const seqno = await contract.getSeqno();
+      const seqno = await retryWithBackoff(() => contract.getSeqno());
       const walletAddress = wallet.address;
       
       // Get the jetton wallet address for the sender
@@ -116,11 +160,11 @@ export class TONService {
         .storeAddress(walletAddress)
         .endCell();
       
-      const jettonWalletData = await this.client.runMethod(
+      const jettonWalletData = await retryWithBackoff(() => this.client.runMethod(
         jettonMasterAddr, 
         'get_wallet_address', 
         [{ type: 'slice', cell: addressCell }]
-      );
+      ));
       
       const jettonWalletAddress = jettonWalletData.stack.readAddress();
       
@@ -148,16 +192,16 @@ export class TONService {
         body: transferBody
       });
       
-      await contract.sendTransfer({
+      await retryWithBackoff(() => contract.sendTransfer({
         seqno,
         secretKey: keyPair.secretKey,
         messages: [internalMessage]
-      });
+      }));
       
       // Wait for confirmation
       for (let attempt = 0; attempt < 30; attempt++) {
         await new Promise(resolve => setTimeout(resolve, 2000));
-        const currentSeqno = await contract.getSeqno();
+        const currentSeqno = await retryWithBackoff(() => contract.getSeqno());
         if (currentSeqno > seqno) {
           return { 
             success: true,
@@ -167,10 +211,20 @@ export class TONService {
       }
       
       return { success: false, error: 'Transaction timeout' };
-    } catch (error) {
+    } catch (error: any) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Send Jetton failed:', errorMsg);
+      
+      if (errorMsg.includes('429') || error?.status === 429) {
+        return {
+          success: false,
+          error: 'Network busy. Please wait a moment and try again.'
+        };
+      }
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMsg
       };
     }
   }

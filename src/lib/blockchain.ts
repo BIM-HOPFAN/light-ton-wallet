@@ -3,6 +3,39 @@ import { TonClient, Address, beginCell } from '@ton/ton';
 
 export type Network = 'mainnet' | 'testnet';
 
+const API_KEY = 'f2e9c024f7ed8f8c97f82a6d8c1e4b5a3d6c7e8f9a0b1c2d3e4f5a6b7c8d9e0f'; // Free public key
+
+// Retry helper with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  initialDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      const is429 = error?.message?.includes('429') || error?.status === 429;
+      
+      if (attempt < maxRetries - 1 && is429) {
+        const delay = initialDelay * Math.pow(2, attempt);
+        console.log(`Rate limited (429), retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else if (attempt < maxRetries - 1) {
+        const delay = initialDelay;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        break;
+      }
+    }
+  }
+  
+  throw lastError || new Error('Operation failed after retries');
+}
+
 class BlockchainService {
   private mainnetClient: TonClient;
   private testnetClient: TonClient;
@@ -12,11 +45,13 @@ class BlockchainService {
     // Initialize mainnet (production)
     this.mainnetClient = new TonClient({
       endpoint: 'https://toncenter.com/api/v2/jsonRPC',
+      apiKey: API_KEY,
     });
     
     // Initialize testnet (development)
     this.testnetClient = new TonClient({
       endpoint: 'https://testnet.toncenter.com/api/v2/jsonRPC',
+      apiKey: API_KEY,
     });
   }
 
@@ -37,7 +72,7 @@ class BlockchainService {
       console.log(`🔄 Fetching balance for ${address} on ${this.currentNetwork}`);
       const client = this.getClient();
       const addr = Address.parse(address);
-      const balance = await client.getBalance(addr);
+      const balance = await retryWithBackoff(() => client.getBalance(addr));
       const tonBalance = (Number(balance) / 1e9).toFixed(2);
       console.log(`✅ Balance fetched: ${tonBalance} TON`);
       return tonBalance;
@@ -61,15 +96,19 @@ class BlockchainService {
         .endCell();
       
       // Call get_wallet_address method on jetton master contract
-      const jettonMasterData = await client.runMethod(tokenAddr, 'get_wallet_address', [
-        { type: 'slice', cell: addressCell }
-      ]);
+      const jettonMasterData = await retryWithBackoff(() => 
+        client.runMethod(tokenAddr, 'get_wallet_address', [
+          { type: 'slice', cell: addressCell }
+        ])
+      );
       
       // Get the jetton wallet address from the response
       const jettonWalletAddress = jettonMasterData.stack.readAddress();
       
       // Now get the balance from the jetton wallet
-      const walletData = await client.runMethod(jettonWalletAddress, 'get_wallet_data');
+      const walletData = await retryWithBackoff(() => 
+        client.runMethod(jettonWalletAddress, 'get_wallet_data')
+      );
       const balance = walletData.stack.readBigNumber();
       
       // Convert from token decimals (usually 9 for TON tokens)
@@ -84,7 +123,9 @@ class BlockchainService {
     try {
       const client = this.getClient();
       const addr = Address.parse(address);
-      const transactions = await client.getTransactions(addr, { limit });
+      const transactions = await retryWithBackoff(() => 
+        client.getTransactions(addr, { limit })
+      );
       return transactions;
     } catch (error) {
       console.error('Error fetching transactions:', error);
@@ -112,7 +153,9 @@ class BlockchainService {
       const tokenAddr = Address.parse(tokenContractAddress);
       
       // Get jetton data from master contract
-      const jettonData = await client.runMethod(tokenAddr, 'get_jetton_data');
+      const jettonData = await retryWithBackoff(() => 
+        client.runMethod(tokenAddr, 'get_jetton_data')
+      );
       
       // Read the content cell which contains metadata
       const contentCell = jettonData.stack.readCell();

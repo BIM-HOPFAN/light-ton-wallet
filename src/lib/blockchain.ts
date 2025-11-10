@@ -34,13 +34,16 @@ class BlockchainService {
 
   async getBalance(address: string): Promise<string> {
     try {
+      console.log(`🔄 Fetching balance for ${address} on ${this.currentNetwork}`);
       const client = this.getClient();
       const addr = Address.parse(address);
       const balance = await client.getBalance(addr);
-      return (Number(balance) / 1e9).toFixed(2);
+      const tonBalance = (Number(balance) / 1e9).toFixed(2);
+      console.log(`✅ Balance fetched: ${tonBalance} TON`);
+      return tonBalance;
     } catch (error) {
-      console.error('Error fetching balance:', error);
-      return '0.00';
+      console.error('❌ Error fetching balance:', error);
+      throw new Error(`Failed to fetch balance: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

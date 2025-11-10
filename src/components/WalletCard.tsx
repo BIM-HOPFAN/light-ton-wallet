@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getTokens, Token } from '@/lib/tokens';
 import { blockchainService, Network as NetworkType } from '@/lib/blockchain';
-import { currencyService, Currency } from '@/lib/currency';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,8 +23,6 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [showAllTokens, setShowAllTokens] = useState(false);
   const [network, setNetwork] = useState<NetworkType>('mainnet');
-  const [currency, setCurrency] = useState<Currency>('USD');
-  const [fiatBalance, setFiatBalance] = useState('0.00');
 
   useEffect(() => {
     const loadTokensWithBalances = async () => {
@@ -74,21 +72,6 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
     return () => clearInterval(interval);
   }, [wallet?.address]);
 
-  useEffect(() => {
-    const convertBalance = async () => {
-      try {
-        const fiat = await currencyService.convertTONtoFiat(balance, currency);
-        setFiatBalance(fiat);
-      } catch (error) {
-        console.error('Failed to convert balance:', error);
-        setFiatBalance('--');
-        if (!currencyService.hasRates()) {
-          toast.error('Unable to fetch live prices. Please check your connection.');
-        }
-      }
-    };
-    convertBalance();
-  }, [balance, currency]);
 
   const handleNetworkChange = (newNetwork: NetworkType) => {
     setNetwork(newNetwork);
@@ -111,7 +94,7 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
     <Card className="gradient-card shadow-glow p-6 mb-6">
       <div className="flex justify-between items-center mb-4">
         <Select value={network} onValueChange={(value) => handleNetworkChange(value as NetworkType)}>
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -119,40 +102,16 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
             <SelectItem value="testnet">Testnet</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={currency} onValueChange={(value) => setCurrency(value as Currency)}>
-          <SelectTrigger className="w-24">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="USD">USD</SelectItem>
-            <SelectItem value="EUR">EUR</SelectItem>
-            <SelectItem value="GBP">GBP</SelectItem>
-            <SelectItem value="JPY">JPY</SelectItem>
-            <SelectItem value="RUB">RUB</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
       
       <div className="text-center mb-6">
         <p className="text-sm text-muted-foreground mb-2">Total Balance</p>
         {isLoading ? (
-          <div className="flex flex-col items-center gap-2">
-            <Skeleton className="h-14 w-48" />
-            <Skeleton className="h-5 w-32" />
-          </div>
+          <Skeleton className="h-14 w-48" />
         ) : (
-          <>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              {balance} TON
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              {fiatBalance === '--' ? (
-                <span className="text-destructive text-xs">Price unavailable</span>
-              ) : (
-                <>≈ {currencyService.formatCurrency(fiatBalance, currency)}</>
-              )}
-            </p>
-          </>
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            {balance} TON
+          </h1>
         )}
       </div>
       

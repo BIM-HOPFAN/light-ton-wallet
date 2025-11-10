@@ -4,15 +4,12 @@ import { useWallet } from '@/contexts/WalletContext';
 import { useAuth } from '@/contexts/AuthContext';
 import WalletCard from '@/components/WalletCard';
 import TransactionList from '@/components/TransactionList';
-import { PriceChart } from '@/components/PriceChart';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
-import { PriceAlerts } from '@/components/PriceAlerts';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Settings, LogOut, ScanLine, Coins, ArrowRight, Image, Globe, UserCircle, ShoppingBag, Building2, BarChart3, Bell } from 'lucide-react';
+import { Settings, LogOut, ScanLine, Coins, ArrowRight, Image, Globe, UserCircle, ShoppingBag, Building2, BarChart3 } from 'lucide-react';
 import { TransactionNotificationBadge } from '@/components/TransactionNotificationBadge';
-import { tonService } from '@/lib/ton';
 import { blockchainService } from '@/lib/blockchain';
 import { autoLockService } from '@/lib/autolock';
 import { deleteWallet } from '@/lib/storage';
@@ -33,21 +30,43 @@ export default function Dashboard() {
 
   // Fetch balance and transactions functions
   const fetchBalance = async (showLoading = false) => {
-    if (wallet?.address) {
-      try {
-        if (showLoading) setIsLoadingBalance(true);
-        console.log('🔄 Fetching balance for:', wallet.address);
-        const bal = await blockchainService.getBalance(wallet.address);
-        console.log('✅ Balance fetched:', bal);
-        setBalance(bal);
-      } catch (error) {
-        console.error('❌ Balance fetch error:', error);
-        toast.error('Failed to fetch balance. Please check your connection.');
-      } finally {
-        if (showLoading) setIsLoadingBalance(false);
-      }
-    } else {
+    if (!wallet?.address) {
       console.warn('⚠️ No wallet address available for balance fetch');
+      return;
+    }
+    
+    try {
+      if (showLoading) setIsLoadingBalance(true);
+      console.log('🔄 Fetching balance for:', wallet.address);
+      
+      // Retry logic for balance fetching
+      let attempts = 0;
+      const maxAttempts = 3;
+      let lastError: Error | null = null;
+      
+      while (attempts < maxAttempts) {
+        try {
+          const bal = await blockchainService.getBalance(wallet.address);
+          console.log('✅ Balance fetched:', bal);
+          setBalance(bal);
+          return; // Success, exit
+        } catch (error) {
+          lastError = error as Error;
+          attempts++;
+          if (attempts < maxAttempts) {
+            console.log(`⚠️ Retry ${attempts}/${maxAttempts} after error:`, error);
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempts)); // Exponential backoff
+          }
+        }
+      }
+      
+      // All attempts failed
+      throw lastError || new Error('Failed to fetch balance');
+    } catch (error) {
+      console.error('❌ Balance fetch error after retries:', error);
+      toast.error('Unable to fetch balance. Please check your connection and try refreshing.');
+    } finally {
+      if (showLoading) setIsLoadingBalance(false);
     }
   };
 
@@ -71,19 +90,13 @@ export default function Dashboard() {
   };
   
   useEffect(() => {
-    // First check if wallet exists and is not locked
-    if (!wallet) {
+    // Check if wallet is unlocked
+    if (!wallet || isLocked) {
       navigate('/unlock');
       return;
     }
 
-    if (isLocked) {
-      navigate('/unlock');
-      return;
-    }
-
-    // IMPORTANT: Reset the auto-lock timer immediately when Dashboard mounts
-    // This prevents false positives on page refresh
+    // Reset the auto-lock timer when Dashboard mounts
     autoLockService.updateLastActivity();
     
     // Initialize Telegram WebApp if available
@@ -228,16 +241,6 @@ export default function Dashboard() {
       
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <WalletCard isLoading={isLoadingBalance} />
-
-        {/* Price Chart */}
-        <div className="my-6">
-          <PriceChart />
-        </div>
-
-        {/* Price Alerts */}
-        <div className="my-6">
-          <PriceAlerts />
-        </div>
         
         {/* Quick Actions - Bimcart & Bank Featured */}
         <div className="grid grid-cols-2 gap-3 my-6">

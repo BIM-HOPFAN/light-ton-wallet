@@ -27,11 +27,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const active = getActiveWallet();
       if (active) {
         setActiveWalletId(active.id);
-        // Don't automatically set isLocked to true on page refresh
-        // Let the Unlock page handle the lock check based on auto-lock timer
-        if (!wallet) {
-          setIsLocked(true);
-        }
+        // Always require unlock after page refresh for security
+        setIsLocked(true);
       }
     } else {
       setIsLocked(false);

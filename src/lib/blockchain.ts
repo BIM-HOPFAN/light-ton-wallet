@@ -3,8 +3,6 @@ import { TonClient, Address, beginCell } from '@ton/ton';
 
 export type Network = 'mainnet' | 'testnet';
 
-const API_KEY = 'f2e9c024f7ed8f8c97f82a6d8c1e4b5a3d6c7e8f9a0b1c2d3e4f5a6b7c8d9e0f'; // Free public key
-
 // Retry helper with exponential backoff
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
@@ -45,13 +43,11 @@ class BlockchainService {
     // Initialize mainnet (production)
     this.mainnetClient = new TonClient({
       endpoint: 'https://toncenter.com/api/v2/jsonRPC',
-      apiKey: API_KEY,
     });
     
     // Initialize testnet (development)
     this.testnetClient = new TonClient({
       endpoint: 'https://testnet.toncenter.com/api/v2/jsonRPC',
-      apiKey: API_KEY,
     });
   }
 
@@ -78,7 +74,7 @@ class BlockchainService {
       return tonBalance;
     } catch (error) {
       console.error('❌ Error fetching balance:', error);
-      throw new Error(`Failed to fetch balance: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return '0.00';
     }
   }
 

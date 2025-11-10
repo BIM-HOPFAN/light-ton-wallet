@@ -1,9 +1,8 @@
 import { TonClient, WalletContractV4, internal, Address, beginCell } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 
-// TON Client - Mainnet with API key support
+// TON Client - Mainnet
 const ENDPOINT = 'https://toncenter.com/api/v2/jsonRPC';
-const API_KEY = 'f2e9c024f7ed8f8c97f82a6d8c1e4b5a3d6c7e8f9a0b1c2d3e4f5a6b7c8d9e0f'; // Free public key
 
 // Retry helper with exponential backoff
 async function retryWithBackoff<T>(
@@ -43,7 +42,6 @@ export class TONService {
   constructor() {
     this.client = new TonClient({
       endpoint: ENDPOINT,
-      apiKey: API_KEY,
     });
   }
   

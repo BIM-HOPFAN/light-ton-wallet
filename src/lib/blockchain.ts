@@ -3,11 +3,11 @@ import { TonClient, Address, beginCell } from '@ton/ton';
 
 export type Network = 'mainnet' | 'testnet';
 
-// Retry helper with exponential backoff
+// Aggressive retry helper with exponential backoff for rate limiting
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  maxRetries: number = 3,
-  initialDelay: number = 1000
+  maxRetries: number = 5,
+  initialDelay: number = 2000
 ): Promise<T> {
   let lastError: Error | null = null;
   
@@ -16,14 +16,12 @@ async function retryWithBackoff<T>(
       return await fn();
     } catch (error: any) {
       lastError = error;
-      const is429 = error?.message?.includes('429') || error?.status === 429;
+      const is429 = error?.message?.includes('429') || error?.status === 429 || error?.message?.includes('rate limit');
       
-      if (attempt < maxRetries - 1 && is429) {
+      if (attempt < maxRetries - 1) {
+        // More aggressive backoff: 2s, 4s, 8s, 16s, 32s
         const delay = initialDelay * Math.pow(2, attempt);
-        console.log(`Rate limited (429), retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      } else if (attempt < maxRetries - 1) {
-        const delay = initialDelay;
+        console.log(`${is429 ? 'Rate limited' : 'Request failed'}, retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
       } else {
         break;
@@ -68,12 +66,20 @@ class BlockchainService {
       console.log(`🔄 Fetching balance for ${address} on ${this.currentNetwork}`);
       const client = this.getClient();
       const addr = Address.parse(address);
-      const balance = await retryWithBackoff(() => client.getBalance(addr));
+      
+      // Add small random delay to avoid hitting rate limits
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 500));
+      
+      const balance = await retryWithBackoff(() => client.getBalance(addr), 5, 2000);
       const tonBalance = (Number(balance) / 1e9).toFixed(2);
       console.log(`✅ Balance fetched: ${tonBalance} TON`);
       return tonBalance;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error fetching balance:', error);
+      const errorMsg = error?.message || 'Unknown error';
+      if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {
+        console.warn('Rate limit hit - balance will show 0.00');
+      }
       return '0.00';
     }
   }

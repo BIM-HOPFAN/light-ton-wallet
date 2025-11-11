@@ -4,11 +4,11 @@ import { mnemonicToPrivateKey } from '@ton/crypto';
 // TON Client - Mainnet
 const ENDPOINT = 'https://toncenter.com/api/v2/jsonRPC';
 
-// Retry helper with exponential backoff
+// Aggressive retry helper with exponential backoff for rate limiting
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  maxRetries: number = 3,
-  initialDelay: number = 1000
+  maxRetries: number = 5,
+  initialDelay: number = 2000
 ): Promise<T> {
   let lastError: Error | null = null;
   
@@ -17,15 +17,12 @@ async function retryWithBackoff<T>(
       return await fn();
     } catch (error: any) {
       lastError = error;
-      const is429 = error?.message?.includes('429') || error?.status === 429;
+      const is429 = error?.message?.includes('429') || error?.status === 429 || error?.message?.includes('rate limit');
       
-      if (attempt < maxRetries - 1 && is429) {
+      if (attempt < maxRetries - 1) {
+        // More aggressive backoff: 2s, 4s, 8s, 16s, 32s
         const delay = initialDelay * Math.pow(2, attempt);
-        console.log(`Rate limited (429), retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      } else if (attempt < maxRetries - 1) {
-        // For non-429 errors, still retry but with shorter delay
-        const delay = initialDelay;
+        console.log(`${is429 ? 'Rate limited' : 'Request failed'}, retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
       } else {
         break;
@@ -49,11 +46,17 @@ export class TONService {
   async getBalance(address: string): Promise<string> {
     try {
       const addr = Address.parse(address);
-      const balance = await retryWithBackoff(() => this.client.getBalance(addr));
+      // Add small random delay to avoid hitting rate limits
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 500));
+      const balance = await retryWithBackoff(() => this.client.getBalance(addr), 5, 2000);
       // Convert from nanoTON to TON
       return (Number(balance) / 1e9).toFixed(2);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to get balance:', error);
+      const errorMsg = error?.message || 'Unknown error';
+      if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {
+        console.warn('Rate limit hit - balance will show 0.00');
+      }
       return '0.00';
     }
   }
@@ -74,7 +77,11 @@ export class TONService {
       });
       
       const contract = this.client.open(wallet);
-      const seqno = await retryWithBackoff(() => contract.getSeqno());
+      
+      // Add small random delay before transaction
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+      
+      const seqno = await retryWithBackoff(() => contract.getSeqno(), 5, 2000);
       
       // Convert TON to nanoTON
       const amountNano = Math.floor(parseFloat(params.amount) * 1e9).toString();
@@ -98,30 +105,34 @@ export class TONService {
         seqno,
         secretKey: keyPair.secretKey,
         messages: [transfer]
-      }));
+      }), 5, 2000);
       
-      // Wait for confirmation
+      // Wait for confirmation with retries
       const walletAddress = wallet.address.toString();
       for (let attempt = 0; attempt < 30; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const currentSeqno = await retryWithBackoff(() => contract.getSeqno());
-        if (currentSeqno > seqno) {
-          return { 
-            success: true,
-            txHash: `${seqno}_${walletAddress}`
-          };
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        try {
+          const currentSeqno = await retryWithBackoff(() => contract.getSeqno(), 3, 1000);
+          if (currentSeqno > seqno) {
+            return { 
+              success: true,
+              txHash: `${seqno}_${walletAddress}`
+            };
+          }
+        } catch (seqnoError) {
+          console.warn('Error checking confirmation, will retry...', seqnoError);
         }
       }
       
-      return { success: false, error: 'Transaction timeout' };
+      return { success: false, error: 'Transaction timeout - transaction may still complete' };
     } catch (error: any) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       console.error('Send TON failed:', errorMsg);
       
-      if (errorMsg.includes('429') || error?.status === 429) {
+      if (errorMsg.includes('429') || errorMsg.includes('rate limit') || error?.status === 429) {
         return {
           success: false,
-          error: 'Network busy. Please wait a moment and try again.'
+          error: 'Network is busy. Please wait 30 seconds and try again.'
         };
       }
       
@@ -149,7 +160,11 @@ export class TONService {
       });
       
       const contract = this.client.open(wallet);
-      const seqno = await retryWithBackoff(() => contract.getSeqno());
+      
+      // Add small random delay before transaction
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+      
+      const seqno = await retryWithBackoff(() => contract.getSeqno(), 5, 2000);
       const walletAddress = wallet.address;
       
       // Get the jetton wallet address for the sender
@@ -162,7 +177,7 @@ export class TONService {
         jettonMasterAddr, 
         'get_wallet_address', 
         [{ type: 'slice', cell: addressCell }]
-      ));
+      ), 5, 2000);
       
       const jettonWalletAddress = jettonWalletData.stack.readAddress();
       
@@ -194,29 +209,33 @@ export class TONService {
         seqno,
         secretKey: keyPair.secretKey,
         messages: [internalMessage]
-      }));
+      }), 5, 2000);
       
-      // Wait for confirmation
+      // Wait for confirmation with retries
       for (let attempt = 0; attempt < 30; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const currentSeqno = await retryWithBackoff(() => contract.getSeqno());
-        if (currentSeqno > seqno) {
-          return { 
-            success: true,
-            txHash: `${seqno}_${walletAddress.toString()}` 
-          };
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        try {
+          const currentSeqno = await retryWithBackoff(() => contract.getSeqno(), 3, 1000);
+          if (currentSeqno > seqno) {
+            return { 
+              success: true,
+              txHash: `${seqno}_${walletAddress.toString()}` 
+            };
+          }
+        } catch (seqnoError) {
+          console.warn('Error checking confirmation, will retry...', seqnoError);
         }
       }
       
-      return { success: false, error: 'Transaction timeout' };
+      return { success: false, error: 'Transaction timeout - transaction may still complete' };
     } catch (error: any) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       console.error('Send Jetton failed:', errorMsg);
       
-      if (errorMsg.includes('429') || error?.status === 429) {
+      if (errorMsg.includes('429') || errorMsg.includes('rate limit') || error?.status === 429) {
         return {
           success: false,
-          error: 'Network busy. Please wait a moment and try again.'
+          error: 'Network is busy. Please wait 30 seconds and try again.'
         };
       }
       

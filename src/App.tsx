@@ -38,7 +38,6 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SocialRecovery from "./pages/SocialRecovery";
 import Staking from "./pages/Staking";
-import MultiSig from "./pages/MultiSig";
 import ScheduledTransactions from "./pages/ScheduledTransactions";
 import FiatOnRamp from "./pages/FiatOnRamp";
 import { hasWallet } from "./lib/storage";
@@ -97,7 +96,6 @@ const App = () => {
                 {/* New Features */}
                 <Route path="/social-recovery" element={<SocialRecovery />} />
                 <Route path="/staking" element={<Staking />} />
-                <Route path="/multisig" element={<MultiSig />} />
                 <Route path="/scheduled" element={<ScheduledTransactions />} />
                 <Route path="/buy-crypto" element={<FiatOnRamp />} />
                 

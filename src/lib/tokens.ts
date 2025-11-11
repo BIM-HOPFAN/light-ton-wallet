@@ -1,7 +1,7 @@
 import bimcoinLogo from '@/assets/bimcoin-logo.svg';
 import { blockchainService } from './blockchain';
 
-export type Network = 'TON' | 'Ethereum' | 'Binance Smart Chain' | 'Polygon' | 'Solana' | 'Bitcoin';
+export type Network = 'TON';
 
 export interface Token {
   id: string;
@@ -57,14 +57,8 @@ export const DEFAULT_TOKENS: Token[] = [
   },
 ];
 
-export const SUPPORTED_NETWORKS: Network[] = [
-  'TON',
-  'Ethereum',
-  'Binance Smart Chain',
-  'Polygon',
-  'Solana',
-  'Bitcoin',
-];
+// Only TON network is supported
+export const SUPPORTED_NETWORKS: Network[] = ['TON'];
 
 export function getTokens(): Token[] {
   try {
@@ -111,6 +105,11 @@ export function getTokens(): Token[] {
 }
 
 export function addToken(token: Omit<Token, 'id'>): Token {
+  // Enforce TON network only
+  if (token.network !== 'TON') {
+    throw new Error('Only TON network tokens are supported');
+  }
+  
   const tokens = getTokens();
   const newToken: Token = {
     ...token,

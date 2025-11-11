@@ -2,7 +2,7 @@
 export interface TransactionNotification {
   id: string;
   user_id: string;
-  type: 'send' | 'receive' | 'swap' | 'escrow' | 'multisig';
+  type: 'send' | 'receive' | 'swap' | 'escrow';
   title: string;
   message: string;
   amount?: string;

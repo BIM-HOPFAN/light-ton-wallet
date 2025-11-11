@@ -23,6 +23,7 @@ import Install from "./pages/Install";
 import AddressBook from "./pages/AddressBook";
 import NFTGallery from "./pages/NFTGallery";
 import TransactionDetail from "./pages/TransactionDetail";
+import TransactionHistory from "./pages/TransactionHistory";
 import DAppBrowser from "./pages/DAppBrowser";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
@@ -79,6 +80,7 @@ const App = () => {
                 <Route path="/address-book" element={<AddressBook />} />
                 <Route path="/nft-gallery" element={<NFTGallery />} />
                 <Route path="/transaction/:txHash" element={<TransactionDetail />} />
+                <Route path="/transactions" element={<TransactionHistory />} />
                 <Route path="/dapp-browser" element={<DAppBrowser />} />
                 
                 {/* Backend features - auth required (handled in components) */}

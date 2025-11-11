@@ -343,6 +343,18 @@ export default function Dashboard() {
             </div>
             
             <TransactionList />
+            
+            {/* View All Transactions Button */}
+            <div className="flex justify-center mt-4">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/transactions')}
+                className="w-full md:w-auto"
+              >
+                View All Transactions
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="analytics" className="mt-6">

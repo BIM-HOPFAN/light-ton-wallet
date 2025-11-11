@@ -160,13 +160,21 @@ export default function Send() {
     <div className="min-h-screen">
       <header className="border-b">
         <div className="container mx-auto px-4 py-4">
-          <Button 
-            variant="ghost"
-            onClick={() => navigate('/dashboard')}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Wallet
-          </Button>
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="ghost"
+              onClick={() => navigate('/dashboard')}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Wallet
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/transactions')}
+            >
+              History
+            </Button>
+          </div>
         </div>
       </header>
       

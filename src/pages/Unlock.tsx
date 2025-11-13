@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Lock, Fingerprint } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -148,8 +148,7 @@ export default function Unlock() {
           
           <div className="mb-6">
             <Label className="mb-2 block text-left">PIN</Label>
-            <Input
-              type="password"
+            <PasswordInput
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
               placeholder="Enter your PIN"

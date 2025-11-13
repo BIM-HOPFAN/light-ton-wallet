@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { WalletData } from '@/lib/crypto';
 import { hasWallet, getActiveWallet, StoredWallet } from '@/lib/storage';
+import { autoLockService } from '@/lib/autolock';
 
 interface WalletContextType {
   wallet: WalletData | null;
@@ -27,8 +28,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const active = getActiveWallet();
       if (active) {
         setActiveWalletId(active.id);
-        // Always require unlock after page refresh for security
-        setIsLocked(true);
+        // Check if session should be locked based on inactivity
+        const shouldLock = autoLockService.shouldLock();
+        setIsLocked(shouldLock);
       }
     } else {
       setIsLocked(false);

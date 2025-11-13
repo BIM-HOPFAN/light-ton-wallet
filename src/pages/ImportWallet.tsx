@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -136,9 +137,8 @@ export default function ImportWallet() {
             
             <div>
               <Label htmlFor="pin">Enter Your PIN</Label>
-              <Input
+              <PasswordInput
                 id="pin"
-                type="password"
                 inputMode="numeric"
                 maxLength={6}
                 value={pin}

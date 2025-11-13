@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Copy, Check, Eye, EyeOff } from 'lucide-react';
@@ -265,8 +266,7 @@ export default function CreateWallet() {
           <div className="space-y-4 mb-6">
             <div>
               <Label className="mb-2 block">Enter PIN (4+ digits)</Label>
-              <Input
-                type="password"
+              <PasswordInput
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
                 placeholder="Enter PIN"
@@ -276,8 +276,7 @@ export default function CreateWallet() {
             
             <div>
               <Label className="mb-2 block">Confirm PIN</Label>
-              <Input
-                type="password"
+              <PasswordInput
                 value={confirmPin}
                 onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
                 placeholder="Confirm PIN"

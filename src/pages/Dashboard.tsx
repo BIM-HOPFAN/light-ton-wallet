@@ -30,15 +30,31 @@ export default function Dashboard() {
 
   // Fetch balance and transactions functions
   const fetchBalance = async (showLoading = false) => {
-    if (!wallet?.address) return;
+    if (!wallet?.address) {
+      console.error('No wallet address available');
+      return;
+    }
     
     try {
       if (showLoading) setIsLoadingBalance(true);
+      console.log('Fetching balance for address:', wallet.address);
       const bal = await blockchainService.getBalance(wallet.address);
+      console.log('Balance fetched successfully:', bal);
       setBalance(bal);
     } catch (error) {
       console.error('Balance fetch error:', error);
-      setBalance('0.00');
+      toast.error('Failed to fetch balance. Retrying...');
+      // Retry once after a short delay
+      setTimeout(async () => {
+        try {
+          const bal = await blockchainService.getBalance(wallet.address);
+          setBalance(bal);
+          console.log('Balance retry successful:', bal);
+        } catch (retryError) {
+          console.error('Balance retry failed:', retryError);
+          setBalance('0.00');
+        }
+      }, 2000);
     } finally {
       if (showLoading) setIsLoadingBalance(false);
     }
@@ -87,12 +103,14 @@ export default function Dashboard() {
     autoLockService.startTimer();
     
     // Fetch both in parallel for instant loading
-    Promise.all([fetchBalance(true), fetchTransactions()]);
+    fetchBalance(true);
+    fetchTransactions();
     
-    // Refresh every 15 seconds
+    // Refresh every 10 seconds for more frequent updates
     const interval = setInterval(() => {
-      Promise.all([fetchBalance(false), fetchTransactions()]);
-    }, 15000);
+      fetchBalance(false);
+      fetchTransactions();
+    }, 10000);
     
     return () => {
       clearInterval(interval);

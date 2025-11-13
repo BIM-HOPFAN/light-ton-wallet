@@ -30,6 +30,7 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
       
       // Fetch balances in parallel for instant loading
       if (wallet?.address) {
+        console.log('Loading token balances for wallet:', wallet.address);
         const tokensWithBalances = await Promise.all(
           allTokens.map(async (token) => {
             if (token.contractAddress && token.network === 'TON') {
@@ -38,6 +39,7 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
                   wallet.address,
                   token.contractAddress
                 );
+                console.log(`${token.symbol} balance:`, balance);
                 return { ...token, balance };
               } catch (error) {
                 console.error(`Failed to fetch balance for ${token.symbol}:`, error);
@@ -49,13 +51,15 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
         );
         setTokens(tokensWithBalances);
       } else {
+        console.log('No wallet address, using default tokens');
         setTokens(allTokens);
       }
     };
     
     loadTokensWithBalances();
     
-    const interval = setInterval(loadTokensWithBalances, 15000);
+    // Refresh every 10 seconds
+    const interval = setInterval(loadTokensWithBalances, 10000);
     return () => clearInterval(interval);
   }, [wallet?.address]);
 

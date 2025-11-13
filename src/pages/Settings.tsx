@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet, Link2, Fingerprint, Clock, LogOut, TrendingUp, Calendar, DollarSign } from 'lucide-react';
+import { ArrowLeft, Eye, Shield, Trash2, Download, Wallet, Link2, Clock, LogOut, TrendingUp, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/contexts/WalletContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,7 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { biometricService } from '@/lib/biometric';
 import { autoLockService } from '@/lib/autolock';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,19 +26,12 @@ export default function Settings() {
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [autoLockMinutes, setAutoLockMinutes] = useState(5);
   
   useEffect(() => {
-    checkBiometricAvailability();
     loadSettings();
   }, []);
   
-  const checkBiometricAvailability = async () => {
-    const available = await biometricService.isAvailable();
-    setBiometricAvailable(available);
-  };
   
   const loadSettings = async () => {
     try {
@@ -53,7 +45,6 @@ export default function Settings() {
         .maybeSingle();
       
       if (data) {
-        setBiometricEnabled(data.biometric_enabled || false);
         setAutoLockMinutes(data.auto_lock_minutes || 5);
         autoLockService.setLockTimeout(data.auto_lock_minutes || 5);
       }
@@ -81,33 +72,6 @@ export default function Settings() {
     }
   };
   
-  const handleBiometricToggle = async (enabled: boolean) => {
-    if (!user) {
-      toast.error('User not authenticated');
-      return;
-    }
-
-    if (enabled && !biometricAvailable) {
-      toast.error('Biometric authentication is not available on this device');
-      return;
-    }
-    
-    if (enabled) {
-      const success = await biometricService.register(user.id);
-      if (success) {
-        setBiometricEnabled(true);
-        await updateSettings({ biometric_enabled: true });
-        toast.success('Biometric authentication enabled');
-      } else {
-        toast.error('Failed to enable biometric authentication');
-      }
-    } else {
-      await biometricService.unregister();
-      setBiometricEnabled(false);
-      await updateSettings({ biometric_enabled: false });
-      toast.success('Biometric authentication disabled');
-    }
-  };
   
   const handleAutoLockChange = async (minutes: string) => {
     const mins = parseInt(minutes);
@@ -198,27 +162,6 @@ export default function Settings() {
           {/* Notifications */}
           <NotificationSettings />
 
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                  <Fingerprint className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Biometric Authentication</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {biometricAvailable ? 'Use fingerprint or face ID to unlock' : 'Not available on this device'}
-                  </p>
-                </div>
-              </div>
-              <Switch
-                checked={biometricEnabled}
-                onCheckedChange={handleBiometricToggle}
-                disabled={!biometricAvailable}
-              />
-            </div>
-          </Card>
-          
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
@@ -341,26 +284,6 @@ export default function Settings() {
                 onClick={() => navigate('/scheduled')}
               >
                 Schedule
-              </Button>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                  <DollarSign className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Buy Crypto</h3>
-                  <p className="text-sm text-muted-foreground">Purchase crypto with fiat currency</p>
-                </div>
-              </div>
-              <Button 
-                variant="outline"
-                onClick={() => navigate('/buy-crypto')}
-              >
-                Buy
               </Button>
             </div>
           </Card>

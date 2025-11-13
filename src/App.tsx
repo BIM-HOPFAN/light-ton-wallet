@@ -36,7 +36,6 @@ import NotFound from "./pages/NotFound";
 import SocialRecovery from "./pages/SocialRecovery";
 import Staking from "./pages/Staking";
 import ScheduledTransactions from "./pages/ScheduledTransactions";
-import FiatOnRamp from "./pages/FiatOnRamp";
 import { hasWallet } from "./lib/storage";
 
 const queryClient = new QueryClient();
@@ -91,7 +90,6 @@ const App = () => {
                 <Route path="/social-recovery" element={<SocialRecovery />} />
                 <Route path="/staking" element={<Staking />} />
                 <Route path="/scheduled" element={<ScheduledTransactions />} />
-                <Route path="/buy-crypto" element={<FiatOnRamp />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

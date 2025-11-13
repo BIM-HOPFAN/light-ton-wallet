@@ -1,67 +1,37 @@
-import { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { transactionNotificationService, TransactionNotification } from '@/lib/transactionNotifications';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { useNotifications } from '@/hooks/useNotifications';
+import { Badge } from '@/components/ui/badge';
+import { useFinancialNotifications } from '@/hooks/useFinancialNotifications';
+import { cn } from '@/lib/utils';
 
 export function TransactionNotificationBadge() {
-  const { user } = useAuth();
-  const { sendNotification, permission } = useNotifications();
-  const [notifications, setNotifications] = useState<TransactionNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useFinancialNotifications();
 
-  useEffect(() => {
-    if (!user) return;
-
-    const handleNotification = (notification: TransactionNotification) => {
-      setNotifications(prev => {
-        // Avoid duplicates
-        if (prev.some(n => n.id === notification.id)) return prev;
-        return [notification, ...prev];
-      });
-      
-      if (!notification.read) {
-        setUnreadCount(prev => prev + 1);
-
-        // Show toast notification
-        toast.success(notification.title, {
-          description: notification.message,
-        });
-
-        // Show browser notification if enabled
-        if (permission === 'granted') {
-          sendNotification(notification.title, {
-            body: notification.message,
-            tag: notification.id,
-          });
-        }
-      }
-    };
-
-    const cleanup = transactionNotificationService.subscribe(user.id, handleNotification);
-
-    return cleanup;
-  }, [user, permission, sendNotification]);
-
-  const markAsRead = (id: string) => {
-    if (!user) return;
-    transactionNotificationService.markAsRead(user.id, id);
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, read: true } : n))
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
-  };
-
-  const markAllAsRead = () => {
-    if (!user) return;
-    transactionNotificationService.markAllAsRead(user.id);
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    setUnreadCount(0);
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'wallet_receive':
+        return '💰';
+      case 'wallet_send':
+        return '📤';
+      case 'bank_deposit':
+        return '🏦';
+      case 'bank_withdrawal':
+        return '💸';
+      case 'order_placed':
+        return '🛒';
+      case 'order_shipped':
+        return '📦';
+      case 'order_delivered':
+        return '✅';
+      case 'escrow_locked':
+        return '🔒';
+      case 'escrow_released':
+        return '🔓';
+      default:
+        return '🔔';
+    }
   };
 
   return (
@@ -70,65 +40,76 @@ export function TransactionNotificationBadge() {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
+            <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
               {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
+            </span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Notifications</h3>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={markAllAsRead}
-              className="text-xs"
-            >
-              Mark all read
-            </Button>
-          )}
+      <PopoverContent className="w-96" align="end">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-lg">Financial Activity</h3>
+          <div className="flex gap-2">
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                Mark all read
+              </Button>
+            )}
+            {notifications.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearAll}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
-        <ScrollArea className="h-80">
+        <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No notifications yet</p>
+            <div className="text-center py-12 text-muted-foreground">
+              <Bell className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No financial activity yet</p>
             </div>
           ) : (
-            <div className="divide-y">
-              {notifications.map(notification => (
-                <button
+            <div className="space-y-2">
+              {notifications.map((notification) => (
+                <div
                   key={notification.id}
-                  onClick={() => markAsRead(notification.id)}
-                  className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
-                    !notification.read ? 'bg-primary/5' : ''
-                  }`}
+                  onClick={() => !notification.read && markAsRead(notification.id)}
+                  className={cn(
+                    'p-4 rounded-lg cursor-pointer transition-all border',
+                    notification.read
+                      ? 'bg-muted/20 border-transparent'
+                      : 'bg-primary/5 hover:bg-primary/10 border-primary/20'
+                  )}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{notification.title}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {notification.message}
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl flex-shrink-0">
+                      {getNotificationIcon(notification.type)}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-sm">
+                          {notification.title}
+                        </p>
+                        {!notification.read && (
+                          <Badge variant="default" className="h-2 w-2 p-0 rounded-full" />
+                        )}
                       </div>
+                      <p className="text-sm text-muted-foreground mt-1 leading-tight">
+                        {notification.message}
+                      </p>
                       {notification.amount && (
-                        <div className="text-xs font-mono mt-1">
-                          {notification.amount} {notification.token}
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="secondary" className="font-mono">
+                            {notification.amount} {notification.token}
+                          </Badge>
                         </div>
                       )}
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-2">
                         {new Date(notification.created_at).toLocaleString()}
-                      </div>
+                      </p>
                     </div>
-                    {!notification.read && (
-                      <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
-                    )}
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}

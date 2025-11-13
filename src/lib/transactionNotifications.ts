@@ -1,22 +1,23 @@
-// Transaction notification system using localStorage
-export interface TransactionNotification {
+// Comprehensive financial notification system
+export interface FinancialNotification {
   id: string;
   user_id: string;
-  type: 'send' | 'receive' | 'swap' | 'escrow';
+  type: 'wallet_send' | 'wallet_receive' | 'swap' | 'bank_deposit' | 'bank_withdrawal' | 'order_placed' | 'order_shipped' | 'order_delivered' | 'escrow_locked' | 'escrow_released';
   title: string;
   message: string;
   amount?: string;
   token?: string;
   read: boolean;
   created_at: string;
+  data?: any;
 }
 
-class TransactionNotificationService {
-  private listeners: Set<(notification: TransactionNotification) => void> = new Set();
-  private STORAGE_KEY = 'transaction_notifications';
+class FinancialNotificationService {
+  private listeners: Set<(notification: FinancialNotification) => void> = new Set();
+  private STORAGE_KEY = 'financial_notifications';
 
-  // Subscribe to transaction notifications
-  subscribe(userId: string, onNotification: (notification: TransactionNotification) => void) {
+  // Subscribe to financial notifications
+  subscribe(userId: string, onNotification: (notification: FinancialNotification) => void) {
     this.listeners.add(onNotification);
 
     // Load existing unread notifications
@@ -24,33 +25,20 @@ class TransactionNotificationService {
     const unread = notifications.filter(n => !n.read);
     unread.forEach(notification => this.notifyListeners(notification));
 
-    // Start polling for new notifications (simpler than realtime)
-    const interval = setInterval(() => {
-      const current = this.getNotifications(userId);
-      const newUnread = current.filter(n => !n.read);
-      newUnread.forEach(notification => {
-        // Only notify if not already notified
-        if (!this.hasNotified(notification.id)) {
-          this.notifyListeners(notification);
-          this.markAsNotified(notification.id);
-        }
-      });
-    }, 5000); // Check every 5 seconds
-
     return () => {
-      clearInterval(interval);
+      this.listeners.delete(onNotification);
     };
   }
 
-  unsubscribe(onNotification: (notification: TransactionNotification) => void) {
+  unsubscribe(onNotification: (notification: FinancialNotification) => void) {
     this.listeners.delete(onNotification);
   }
 
-  private notifyListeners(notification: TransactionNotification) {
+  private notifyListeners(notification: FinancialNotification) {
     this.listeners.forEach(listener => listener(notification));
   }
 
-  private getNotifications(userId: string): TransactionNotification[] {
+  getNotifications(userId: string): FinancialNotification[] {
     try {
       const stored = localStorage.getItem(`${this.STORAGE_KEY}_${userId}`);
       return stored ? JSON.parse(stored) : [];
@@ -59,21 +47,8 @@ class TransactionNotificationService {
     }
   }
 
-  private saveNotifications(userId: string, notifications: TransactionNotification[]) {
+  private saveNotifications(userId: string, notifications: FinancialNotification[]) {
     localStorage.setItem(`${this.STORAGE_KEY}_${userId}`, JSON.stringify(notifications));
-  }
-
-  private hasNotified(id: string): boolean {
-    const notified = localStorage.getItem('notified_ids');
-    if (!notified) return false;
-    return JSON.parse(notified).includes(id);
-  }
-
-  private markAsNotified(id: string) {
-    const notified = localStorage.getItem('notified_ids');
-    const ids = notified ? JSON.parse(notified) : [];
-    ids.push(id);
-    localStorage.setItem('notified_ids', JSON.stringify(ids));
   }
 
   // Mark notification as read
@@ -95,12 +70,12 @@ class TransactionNotificationService {
   // Create a new notification
   createNotification(
     userId: string,
-    type: TransactionNotification['type'],
+    type: FinancialNotification['type'],
     title: string,
     message: string,
-    options?: { amount?: string; token?: string }
+    options?: { amount?: string; token?: string; data?: any }
   ) {
-    const notification: TransactionNotification = {
+    const notification: FinancialNotification = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       user_id: userId,
       type,
@@ -110,19 +85,25 @@ class TransactionNotificationService {
       token: options?.token,
       read: false,
       created_at: new Date().toISOString(),
+      data: options?.data,
     };
 
     const notifications = this.getNotifications(userId);
     notifications.unshift(notification);
     
-    // Keep only last 50 notifications
-    if (notifications.length > 50) {
-      notifications.splice(50);
+    // Keep only last 100 notifications
+    if (notifications.length > 100) {
+      notifications.splice(100);
     }
     
     this.saveNotifications(userId, notifications);
     this.notifyListeners(notification);
   }
+
+  // Clear all notifications
+  clearAll(userId: string) {
+    this.saveNotifications(userId, []);
+  }
 }
 
-export const transactionNotificationService = new TransactionNotificationService();
+export const financialNotificationService = new FinancialNotificationService();

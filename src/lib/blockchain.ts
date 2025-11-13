@@ -3,28 +3,32 @@ import { TonClient, Address, beginCell } from '@ton/ton';
 
 export type Network = 'mainnet' | 'testnet';
 
-// Aggressive retry helper with exponential backoff for rate limiting
 async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 5,
-  initialDelay: number = 2000
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
 ): Promise<T> {
   let lastError: Error | null = null;
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      return await fn();
+      if (attempt > 0) {
+        await new Promise(resolve => setTimeout(resolve, baseDelay * attempt));
+      }
+      
+      return await operation();
     } catch (error: any) {
       lastError = error;
-      const is429 = error?.message?.includes('429') || error?.status === 429 || error?.message?.includes('rate limit');
       
-      if (attempt < maxRetries - 1) {
-        // More aggressive backoff: 2s, 4s, 8s, 16s, 32s
-        const delay = initialDelay * Math.pow(2, attempt);
-        console.log(`${is429 ? 'Rate limited' : 'Request failed'}, retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      } else {
-        break;
+      if (error?.response?.status === 429 || error?.message?.includes('429')) {
+        console.warn(`⚠️ Rate limited, attempt ${attempt + 1}/${maxRetries}`);
+        if (attempt < maxRetries - 1) {
+          continue;
+        }
+      }
+      
+      if (attempt === maxRetries - 1 || (error?.response?.status && error.response.status !== 429)) {
+        throw error;
       }
     }
   }
@@ -63,23 +67,14 @@ class BlockchainService {
 
   async getBalance(address: string): Promise<string> {
     try {
-      console.log(`🔄 Fetching balance for ${address} on ${this.currentNetwork}`);
       const client = this.getClient();
       const addr = Address.parse(address);
       
-      // Add small random delay to avoid hitting rate limits
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 500));
-      
-      const balance = await retryWithBackoff(() => client.getBalance(addr), 5, 2000);
+      const balance = await retryWithBackoff(() => client.getBalance(addr), 3, 1000);
       const tonBalance = (Number(balance) / 1e9).toFixed(2);
-      console.log(`✅ Balance fetched: ${tonBalance} TON`);
       return tonBalance;
     } catch (error: any) {
-      console.error('❌ Error fetching balance:', error);
-      const errorMsg = error?.message || 'Unknown error';
-      if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {
-        console.warn('Rate limit hit - balance will show 0.00');
-      }
+      console.error('Error fetching balance:', error);
       return '0.00';
     }
   }

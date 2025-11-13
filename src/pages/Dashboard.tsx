@@ -30,62 +30,30 @@ export default function Dashboard() {
 
   // Fetch balance and transactions functions
   const fetchBalance = async (showLoading = false) => {
-    if (!wallet?.address) {
-      console.warn('⚠️ No wallet address available for balance fetch');
-      return;
-    }
+    if (!wallet?.address) return;
     
     try {
       if (showLoading) setIsLoadingBalance(true);
-      console.log('🔄 Fetching balance for:', wallet.address);
-      
-      // Retry logic for balance fetching
-      let attempts = 0;
-      const maxAttempts = 3;
-      let lastError: Error | null = null;
-      
-      while (attempts < maxAttempts) {
-        try {
-          const bal = await blockchainService.getBalance(wallet.address);
-          console.log('✅ Balance fetched:', bal);
-          setBalance(bal);
-          return; // Success, exit
-        } catch (error) {
-          lastError = error as Error;
-          attempts++;
-          if (attempts < maxAttempts) {
-            console.log(`⚠️ Retry ${attempts}/${maxAttempts} after error:`, error);
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempts)); // Exponential backoff
-          }
-        }
-      }
-      
-      // All attempts failed
-      throw lastError || new Error('Failed to fetch balance');
+      const bal = await blockchainService.getBalance(wallet.address);
+      setBalance(bal);
     } catch (error) {
-      console.error('❌ Balance fetch error after retries:', error);
-      toast.error('Unable to fetch balance. Please check your connection and try refreshing.');
+      console.error('Balance fetch error:', error);
+      setBalance('0.00');
     } finally {
       if (showLoading) setIsLoadingBalance(false);
     }
   };
 
   const fetchTransactions = async () => {
-    if (wallet?.address) {
-      try {
-        console.log('🔄 Fetching transactions for:', wallet.address);
-        // Fetch blockchain transactions (works without user login)
-        const txs = user?.id 
-          ? await getAllTransactions(user.id, wallet.address)
-          : await getAllTransactions('', wallet.address);
-        console.log('✅ Transactions fetched:', txs.length, 'items');
-        setTransactions(txs);
-      } catch (error) {
-        console.error('❌ Transaction fetch error:', error);
-        toast.error('Failed to fetch transactions');
-      }
-    } else {
-      console.warn('⚠️ No wallet address available for transaction fetch');
+    if (!wallet?.address) return;
+    
+    try {
+      const txs = user?.id 
+        ? await getAllTransactions(user.id, wallet.address)
+        : await getAllTransactions('', wallet.address);
+      setTransactions(txs);
+    } catch (error) {
+      console.error('Transaction fetch error:', error);
     }
   };
   
@@ -118,15 +86,13 @@ export default function Dashboard() {
     autoLockService.setupActivityListeners();
     autoLockService.startTimer();
     
-    // Initial fetch with loading indicator
-    fetchBalance(true);
-    fetchTransactions();
+    // Fetch both in parallel for instant loading
+    Promise.all([fetchBalance(true), fetchTransactions()]);
     
-    // Refresh every 10 seconds (without loading indicator)
+    // Refresh every 15 seconds
     const interval = setInterval(() => {
-      fetchBalance(false);
-      fetchTransactions();
-    }, 10000);
+      Promise.all([fetchBalance(false), fetchTransactions()]);
+    }, 15000);
     
     return () => {
       clearInterval(interval);

@@ -28,31 +28,19 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
     const loadTokensWithBalances = async () => {
       const allTokens = getTokens();
       
-      // Fetch balances and metadata for ALL tokens with contract addresses
+      // Fetch balances in parallel for instant loading
       if (wallet?.address) {
         const tokensWithBalances = await Promise.all(
           allTokens.map(async (token) => {
             if (token.contractAddress && token.network === 'TON') {
               try {
-                // Fetch balance
                 const balance = await blockchainService.getTokenBalance(
                   wallet.address,
                   token.contractAddress
                 );
-                
-                // Fetch metadata from blockchain for ALL tokens (not just Bimcoin)
-                try {
-                  const metadata = await blockchainService.getJettonMetadata(token.contractAddress);
-                  if (metadata.image) {
-                    return { ...token, balance, icon: metadata.image };
-                  }
-                } catch (metadataError) {
-                  console.log(`No blockchain metadata for ${token.symbol}, using default icon`);
-                }
-                
                 return { ...token, balance };
               } catch (error) {
-                console.error(`Failed to fetch data for ${token.symbol}:`, error);
+                console.error(`Failed to fetch balance for ${token.symbol}:`, error);
                 return { ...token, balance: '0.00' };
               }
             }
@@ -67,8 +55,7 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
     
     loadTokensWithBalances();
     
-    // Refresh balances every 10 seconds for better responsiveness
-    const interval = setInterval(loadTokensWithBalances, 10000);
+    const interval = setInterval(loadTokensWithBalances, 15000);
     return () => clearInterval(interval);
   }, [wallet?.address]);
 

@@ -20,11 +20,8 @@ import ImportWallet from "./pages/ImportWallet";
 import ScanConnect from "./pages/ScanConnect";
 import ConnectedApps from "./pages/ConnectedApps";
 import Install from "./pages/Install";
-import AddressBook from "./pages/AddressBook";
-import NFTGallery from "./pages/NFTGallery";
 import TransactionDetail from "./pages/TransactionDetail";
 import TransactionHistory from "./pages/TransactionHistory";
-import DAppBrowser from "./pages/DAppBrowser";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
 import SellerDashboard from "./pages/SellerDashboard";
@@ -76,11 +73,8 @@ const App = () => {
                 <Route path="/scan-connect" element={<ScanConnect />} />
                 <Route path="/connected-apps" element={<ConnectedApps />} />
                 <Route path="/install" element={<Install />} />
-                <Route path="/address-book" element={<AddressBook />} />
-                <Route path="/nft-gallery" element={<NFTGallery />} />
                 <Route path="/transaction/:txHash" element={<TransactionDetail />} />
                 <Route path="/transactions" element={<TransactionHistory />} />
-                <Route path="/dapp-browser" element={<DAppBrowser />} />
                 
                 {/* Backend features - auth required (handled in components) */}
                 <Route path="/shop" element={<Shop />} />

@@ -8,7 +8,7 @@ import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Settings, LogOut, ScanLine, Coins, ArrowRight, Image, Globe, UserCircle, ShoppingBag, Building2, BarChart3 } from 'lucide-react';
+import { Settings, LogOut, ScanLine, Coins, ArrowRight, ShoppingBag, Building2, BarChart3 } from 'lucide-react';
 import { TransactionNotificationBadge } from '@/components/TransactionNotificationBadge';
 import { blockchainService } from '@/lib/blockchain';
 import { autoLockService } from '@/lib/autolock';
@@ -250,37 +250,6 @@ export default function Dashboard() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
-            {/* Additional Quick Actions */}
-            <Card className="p-4">
-              <h3 className="font-semibold mb-3">Quick Actions</h3>
-              <div className="grid grid-cols-3 gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/address-book')}
-                  className="flex flex-col h-auto py-4"
-                >
-                  <UserCircle className="h-6 w-6 mb-2" />
-                  <span className="text-xs">Addresses</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/nft-gallery')}
-                  className="flex flex-col h-auto py-4"
-                >
-                  <Image className="h-6 w-6 mb-2" />
-                  <span className="text-xs">NFTs</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/dapp-browser')}
-                  className="flex flex-col h-auto py-4"
-                >
-                  <Globe className="h-6 w-6 mb-2" />
-                  <span className="text-xs">DApps</span>
-                </Button>
-              </div>
-            </Card>
-
             {/* Bimcoin Earn Promotion */}
             <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-primary/10 via-secondary/10 to-primary/5 p-6 shadow-lg">
               <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">

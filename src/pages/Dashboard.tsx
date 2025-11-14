@@ -60,15 +60,20 @@ export default function Dashboard() {
   };
 
   const fetchTransactions = async () => {
-    if (!wallet?.address) return;
+    if (!wallet?.address) {
+      console.log('No wallet address, skipping transaction fetch');
+      return;
+    }
     
     try {
-      const txs = user?.id 
-        ? await getAllTransactions(user.id, wallet.address)
-        : await getAllTransactions('', wallet.address);
+      console.log('Fetching transactions for wallet:', wallet.address);
+      // Always pass user ID (or empty string), blockchain transactions will still be fetched
+      const txs = await getAllTransactions(user?.id || '', wallet.address);
+      console.log('Transactions fetched and set:', txs.length);
       setTransactions(txs);
     } catch (error) {
       console.error('Transaction fetch error:', error);
+      // Don't clear transactions on error, keep showing what we have
     }
   };
   

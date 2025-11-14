@@ -35,10 +35,13 @@ export function getLegacyTransactions(): Transaction[] {
 // Get transactions from blockchain
 export async function getBlockchainTransactions(walletAddress: string): Promise<Transaction[]> {
   try {
-    const rawTxs = await blockchainService.getTransactions(walletAddress, 20);
+    console.log('Fetching blockchain transactions for:', walletAddress);
+    const rawTxs = await blockchainService.getTransactions(walletAddress, 50);
+    console.log('Raw blockchain transactions:', rawTxs.length);
+    
     const myAddress = Address.parse(walletAddress);
     
-    return rawTxs.map((tx: any) => {
+    const transactions = rawTxs.map((tx: any) => {
       // Determine if this is a send or receive transaction
       const inMsg = tx.inMessage;
       const outMsgs = tx.outMessages;
@@ -46,28 +49,34 @@ export async function getBlockchainTransactions(walletAddress: string): Promise<
       let type: 'send' | 'receive' = 'receive';
       let amount = '0';
       let otherAddress = '';
+      let fee = '0';
       
-      // Check incoming message
+      // Check incoming message (receives)
       if (inMsg && inMsg.value) {
         const value = Number(inMsg.value) / 1e9;
         if (value > 0) {
           type = 'receive';
-          amount = value.toFixed(4);
+          amount = value.toFixed(6);
           otherAddress = inMsg.source?.toString() || '';
         }
       }
       
-      // Check outgoing messages
+      // Check outgoing messages (sends)
       if (outMsgs && outMsgs.length > 0) {
         const outMsg = outMsgs[0];
         if (outMsg.value) {
           const value = Number(outMsg.value) / 1e9;
           if (value > 0) {
             type = 'send';
-            amount = value.toFixed(4);
+            amount = value.toFixed(6);
             otherAddress = outMsg.destination?.toString() || '';
           }
         }
+      }
+
+      // Calculate fees
+      if (tx.totalFees) {
+        fee = (Number(tx.totalFees) / 1e9).toFixed(6);
       }
 
       return {
@@ -80,8 +89,12 @@ export async function getBlockchainTransactions(walletAddress: string): Promise<
         timestamp: new Date(tx.now * 1000),
         status: 'completed' as const,
         txHash: tx.hash().toString('hex'),
+        fee,
       };
     }).filter(tx => parseFloat(tx.amount) > 0); // Filter out zero-value transactions
+    
+    console.log('Processed blockchain transactions:', transactions.length);
+    return transactions;
   } catch (error) {
     console.error('Error fetching blockchain transactions:', error);
     return [];
@@ -90,6 +103,12 @@ export async function getBlockchainTransactions(walletAddress: string): Promise<
 
 // Get transactions from Supabase (for app-specific data)
 export async function getTransactions(userId: string, walletAddress: string): Promise<Transaction[]> {
+  // Skip database query if userId is empty to avoid UUID errors
+  if (!userId || userId.trim() === '') {
+    console.log('Skipping database transactions - no user ID');
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('transaction_history')
     .select('*')
@@ -118,10 +137,18 @@ export async function getTransactions(userId: string, walletAddress: string): Pr
 
 // Combined: Get all transactions (blockchain + database)
 export async function getAllTransactions(userId: string, walletAddress: string): Promise<Transaction[]> {
-  const [blockchainTxs, dbTxs] = await Promise.all([
-    getBlockchainTransactions(walletAddress),
-    getTransactions(userId, walletAddress),
-  ]);
+  console.log('Fetching all transactions for:', { userId: userId || 'none', walletAddress });
+  
+  // Always fetch blockchain transactions (these are the real source of truth)
+  const blockchainTxs = await getBlockchainTransactions(walletAddress);
+  console.log('Blockchain transactions fetched:', blockchainTxs.length);
+  
+  // Only fetch database transactions if user is authenticated
+  let dbTxs: Transaction[] = [];
+  if (userId && userId.trim() !== '') {
+    dbTxs = await getTransactions(userId, walletAddress);
+    console.log('Database transactions fetched:', dbTxs.length);
+  }
 
   // Merge and deduplicate by txHash
   const txMap = new Map<string, Transaction>();
@@ -133,7 +160,7 @@ export async function getAllTransactions(userId: string, walletAddress: string):
     }
   });
   
-  // Add database transactions that aren't already in the map
+  // Add database transactions that aren't already in the map (for pending transactions)
   dbTxs.forEach(tx => {
     if (tx.txHash && !txMap.has(tx.txHash)) {
       txMap.set(tx.txHash, tx);
@@ -143,10 +170,12 @@ export async function getAllTransactions(userId: string, walletAddress: string):
     }
   });
 
-  // Sort by timestamp
-  return Array.from(txMap.values()).sort((a, b) => 
+  const allTxs = Array.from(txMap.values()).sort((a, b) => 
     b.timestamp.getTime() - a.timestamp.getTime()
   );
+  
+  console.log('Total transactions after merge:', allTxs.length);
+  return allTxs;
 }
 
 // Add transaction to Supabase

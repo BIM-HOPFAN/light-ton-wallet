@@ -4,11 +4,10 @@ import { useWallet } from '@/contexts/WalletContext';
 import { useAuth } from '@/contexts/AuthContext';
 import WalletCard from '@/components/WalletCard';
 import TransactionList from '@/components/TransactionList';
-import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
+
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Settings, LogOut, ScanLine, Coins, ArrowRight, ShoppingBag, Building2, BarChart3 } from 'lucide-react';
+import { Settings, LogOut, ScanLine, Coins, ArrowRight, ShoppingBag, Building2 } from 'lucide-react';
 import { TransactionNotificationBadge } from '@/components/TransactionNotificationBadge';
 import { blockchainService } from '@/lib/blockchain';
 import { autoLockService } from '@/lib/autolock';
@@ -257,63 +256,46 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        {/* Tabs for Overview and Analytics */}
-        <Tabs defaultValue="overview" className="w-full my-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="analytics">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Analytics
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6 mt-6">
-            {/* Bimcoin Earn Promotion */}
-            <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-primary/10 via-secondary/10 to-primary/5 p-6 shadow-lg">
-              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="p-3 rounded-full bg-primary/20 backdrop-blur-sm">
-                    <Coins className="h-8 w-8 text-primary" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold text-foreground">Earn with Bimcoin</h3>
-                    <p className="text-sm text-muted-foreground">Start earning rewards on TON Network today</p>
-                  </div>
-                </div>
-                <Button
-                  size="lg"
-                  onClick={() => {
-                    telegramService.hapticFeedback('impact');
-                    telegramService.openLink('https://bimlight.org');
-                  }}
-                  className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-glow group min-w-fit"
-                >
-                  Start Earning
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
+        {/* Bimcoin Earn Promotion */}
+        <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-primary/10 via-secondary/10 to-primary/5 p-6 shadow-lg my-6">
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-4 flex-1">
+              <div className="p-3 rounded-full bg-primary/20 backdrop-blur-sm">
+                <Coins className="h-8 w-8 text-primary" />
               </div>
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl -z-0" />
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold text-foreground">Earn with Bimcoin</h3>
+                <p className="text-sm text-muted-foreground">Start earning rewards on TON Network today</p>
+              </div>
             </div>
-            
-            <TransactionList />
-            
-            {/* View All Transactions Button */}
-            <div className="flex justify-center mt-4">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/transactions')}
-                className="w-full md:w-auto"
-              >
-                View All Transactions
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="analytics" className="mt-6">
-            <AnalyticsDashboard transactions={transactions} balance={balance} />
-          </TabsContent>
-        </Tabs>
+            <Button
+              size="lg"
+              onClick={() => {
+                telegramService.hapticFeedback('impact');
+                telegramService.openLink('https://bimlight.org');
+              }}
+              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-glow group min-w-fit"
+            >
+              Start Earning
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl -z-0" />
+        </div>
+        
+        <TransactionList />
+        
+        {/* View All Transactions Button */}
+        <div className="flex justify-center mt-4">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/transactions')}
+            className="w-full md:w-auto"
+          >
+            View All Transactions
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </main>
     </div>
   );

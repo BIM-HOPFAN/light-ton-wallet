@@ -23,9 +23,11 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [showAllTokens, setShowAllTokens] = useState(false);
   const [network, setNetwork] = useState<NetworkType>('mainnet');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     const loadTokensWithBalances = async () => {
+      setIsSyncing(true);
       const allTokens = getTokens();
       
       // Fetch balances in parallel for instant loading
@@ -54,6 +56,7 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
         console.log('No wallet address, using default tokens');
         setTokens(allTokens);
       }
+      setIsSyncing(false);
     };
     
     loadTokensWithBalances();
@@ -96,7 +99,12 @@ export default function WalletCard({ isLoading = false }: WalletCardProps) {
       </div>
       
       <div className="text-center mb-6">
-        <p className="text-sm text-muted-foreground mb-2">Total Balance</p>
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <p className="text-sm text-muted-foreground">Total Balance</p>
+          {isSyncing && (
+            <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+          )}
+        </div>
         {isLoading ? (
           <Skeleton className="h-14 w-48" />
         ) : (

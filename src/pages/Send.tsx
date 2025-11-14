@@ -320,7 +320,7 @@ export default function Send() {
           <Button 
             className="gradient-primary w-full"
             onClick={handleSend}
-            disabled={!recipient || !amount || loading}
+            disabled={!recipient || !amount || !addressValid || loading}
           >
             {loading ? (
               'Sending...'
